@@ -1,0 +1,26 @@
+SCALA WhatsApp por QR — 11 de octubre de 2026
+
+28 pruebas de comportamiento, persistencia y ejecución en nube aprobadas.
+Corrección de detección de credenciales QR: se comprueba creds.me.id;
+registered puede seguir en false después de vincular por QR.
+El diagnóstico acepta esas credenciales y sigue rechazando una sesión invalidada.
+El reparador conserva data/ y catalogo.json y admite una segunda ejecución.
+Instalación privada de Node.js 24 desde nodejs.org con SHA-256 verificado.
+Importación de Baileys y SQLite verificada en Linux.
+Sintaxis de los scripts Bash comprobada.
+Auditoría de las dependencias: sin vulnerabilidades reportadas por npm en esta revisión.
+
+Las pruebas usan mensajes ficticios y un transporte simulado. No se ha
+vinculado un número ni enviado mensajes reales de WhatsApp. La conexión
+final necesita escanear el QR y comprobar un mensaje entrante desde otro
+número. El servicio de Railway conserva el proceso mientras espera el QR,
+rechaza discos temporales, espera el bloqueo de vinculación y recupera un
+proceso caído. No se ha desplegado todavía en Railway ni comprobado una
+conexión real. Requiere un volumen persistente y crédito disponible.
+
+El contenedor Docker se incluye como alternativa; no se ha ejecutado
+una compilación de Docker en este entorno. La unidad de systemd se
+comprueba como archivo, sin instalar un servicio en este entorno.
+
+Una sesión guardada no garantiza acceso vigente. Baileys es una conexión
+no oficial y no ofrece garantía de disponibilidad permanente.

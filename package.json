@@ -1,0 +1,22 @@
+{
+  "name": "scala-whatsapp-qr",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Atención de productos SCALA mediante un dispositivo vinculado por QR",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "start": "node src/index.mjs --vincular",
+    "service": "node src/index.mjs --servicio",
+    "cloud": "node src/railway.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "diagnostico": "node scripts/diagnostico.mjs"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "7.0.0-rc14",
+    "pino": "10.4.0",
+    "qrcode-terminal": "0.12.0"
+  }
+}

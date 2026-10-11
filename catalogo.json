@@ -1,0 +1,17 @@
+{
+  "website": "https://vitacala.online/",
+  "products": [
+    {
+      "id": "gedeon",
+      "title": "Gedeón, el valiente obediente",
+      "category": "books",
+      "format": "Cuento digital PDF",
+      "description": "Una historia infantil sobre Gedeón, basada en Jueces 6–7.",
+      "aliases": ["gedeon", "valiente obediente"],
+      "price": null,
+      "url": null,
+      "delivery": null
+    }
+  ],
+  "paymentInstructions": null
+}
