@@ -28,7 +28,7 @@ fi
 SCALA_RAILWAY=(npm exec --yes --package=@railway/cli@5.64.2 -- railway)
 printf '%s\n' 'SCALA WhatsApp · Railway' 'Usa la misma cuenta de Railway que conectaste a ChatGPT. No pegues claves aquí.'
 if ! "${SCALA_RAILWAY[@]}" whoami >/dev/null 2>&1; then
-  "${SCALA_RAILWAY[@]}" login --browserless
+  "${SCALA_RAILWAY[@]}" login
 fi
 if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet scala-whatsapp-qr.service; then
   printf '%s\n' 'Deteniendo el bot local para evitar respuestas duplicadas con el servidor.'

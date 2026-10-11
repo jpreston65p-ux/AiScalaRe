@@ -6,7 +6,7 @@ En Railway funciona mientras el servicio esté desplegado, tenga conexión con W
 
 ## Configuración del servicio
 
-1. Fuente: la rama `scala-whatsapp-cloud` de `jpreston65p-ux/AiScalaRe`, raíz `/`. El sitio web usa su propia rama `main`.
+1. Código: la rama `scala-whatsapp-cloud` de `jpreston65p-ux/AiScalaRe`, raíz `/`. El sitio web usa su propia rama `main`. El despliegue inicial se realiza directamente con la CLI oficial; no requiere instalar la aplicación de Railway en GitHub.
 2. Compilación: Dockerfile. Configura el comando de inicio **`node src/railway.mjs`** en el servicio. Este proyecto ya está configurado mediante la conexión de Railway; no usa el formato antiguo `railway.json`.
 3. Un solo servicio y una sola réplica. Adjunta un volumen persistente a **`/app/data`** antes de vincular. No uses un disco temporal para guardar la sesión.
 4. Variables: **`SCALA_DATA_DIR=/app/data`**, **`RAILWAY_RUN_UID=0`** para permitir el acceso al volumen de Railway. Opcional: `SCALA_DAILY_LIMIT=1000`.
@@ -26,6 +26,14 @@ bash "$(xdg-user-dir DOWNLOAD)/VINCULAR_RAILWAY_MINT.sh"
 El archivo utiliza la CLI oficial de Railway fijada en la versión 5.64.2, pide iniciar sesión si hace falta y abre el proyecto y servicio de SCALA con sus identificadores reales. La CLI puede pedir registrar tu clave SSH la primera vez. Si el bot local está activo, lo detiene para evitar respuestas duplicadas.
 
 Proyecto: [SCALA WhatsApp en Railway](https://railway.com/project/86dc9c33-9042-48a9-8201-b94e04232179).
+
+Para actualizar el servidor desde una copia de esta rama con la CLI autenticada:
+
+```bash
+railway up --project 86dc9c33-9042-48a9-8201-b94e04232179 --environment 7da2eda3-0a63-4bb2-9b2f-d606f18a3987 --service addfbe69-28c0-4ff7-91f2-9b045e49e633 --detach -m "Actualiza SCALA WhatsApp"
+```
+
+El comando devuelve cuando comienza la compilación. Revisa que el despliegue llegue a `SUCCESS` en Railway antes de considerar terminada una actualización. Las modificaciones del repositorio no se publican automáticamente mediante este método.
 
 También puedes instalar/iniciar sesión en la CLI oficial por tu cuenta y abrir `railway ssh` seleccionando el proyecto y el servicio de SCALA.
 
