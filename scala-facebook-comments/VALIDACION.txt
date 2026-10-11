@@ -1,0 +1,47 @@
+SCALA Facebook — comentarios públicos — 11 de octubre de 2026
+
+VALIDADO
+45 pruebas automatizadas aprobadas: 27 del modo comentarios y 18 de chat.
+Seis scripts Bash y 18 módulos JavaScript con sintaxis válida.
+Pruebas de estructuras DOM saneadas, fechas españolas, emojis como imágenes,
+respuestas hermanas, privacidad del catálogo, pendientes persistentes,
+avisos agrupados, deduplicación y primer comentario en publicaciones nuevas
+o antiguas. Los transportes de las pruebas son simulados.
+
+COMPROBACIÓN REAL DE FACEBOOK
+Cuenta: Scala Fe, perfil profesional ID 61576458508649.
+Se publicaron y observaron una respuesta real al comentario que preguntó
+el precio en el reel 1079349435002481.
+Comentario padre: 1113975274440060.
+Respuesta de SCALA: 1433778465371696.
+Texto informado: el precio necesita confirmación; no se inventó un monto.
+Se observó primero el estado temporal «Publicando» y después el enlace
+persistido con el identificador numérico de la respuesta.
+
+Esta publicación se realizó mediante el navegador autorizado de esta
+conversación. No fue enviada por Node, Playwright o un servicio del bot.
+Se comprobaron los selectores del reel y de una foto publicada el 2 de
+octubre: un autor propio, el comentario de destino y el campo de identidad.
+Los avisos globales incluyeron comentarios del reel y de la foto anterior.
+
+CAMBIOS
+Detección por avisos: lectura cada 3 segundos y carga cada 30 segundos.
+Se eliminó maxPosts=20 y el recorrido del perfil.
+Se eliminó el descarte del primer comentario en una nueva publicación
+detectada. Las respuestas se comprueban por el enlace de su comentario
+padre, aunque el elemento de respuesta sea hermano del comentario.
+Los pendientes persisten al reiniciar. Se identifican productos confirmados
+sin utilizar comentarios ajenos como configuración de la publicación.
+Mensajes breves, identificación virtual y un máximo de dos emojis.
+
+PENDIENTE
+No se ha iniciado sesión en el navegador del programa.
+No se ha observado una respuesta autónoma enviada por este programa.
+No existe un servicio de Facebook en Railway: solo se encontró el servicio
+de WhatsApp, operativo, que no se modificó.
+verifiedPage=false y allowSending=false en el ZIP.
+No se puede afirmar que responda solo, con la PC apagada, de forma
+instantánea ni que Facebook muestre todos los comentarios en sus avisos.
+
+El precio, la moneda, el pago, el horario y la descarga siguen sin configurar.
+El ZIP excluye sesiones, perfiles, bases privadas, claves y node_modules.

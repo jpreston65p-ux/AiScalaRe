@@ -1,0 +1,23 @@
+{
+  "name": "scala-facebook-browser-bot",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Comentarios SCALA por avisos de Facebook, sin límite de publicaciones; sesión del runtime pendiente",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "demo": "node src/demo.mjs",
+    "demo:comments": "node src/comments-demo.mjs",
+    "start": "node src/entry.mjs",
+    "connect": "node src/connect-comments.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.64.0"
+  },
+  "devDependencies": {
+    "linkedom": "0.18.13"
+  }
+}

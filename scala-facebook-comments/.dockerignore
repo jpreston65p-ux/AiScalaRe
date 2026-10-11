@@ -1,0 +1,11 @@
+node_modules
+data
+tests
+.env
+.env.*
+.agents
+.codex
+.git
+*.zip
+*.sqlite*
+*.log

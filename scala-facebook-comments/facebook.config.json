@@ -1,0 +1,36 @@
+{
+  "mode": "comments",
+  "pageUrl": "https://www.facebook.com/p/Scala-Fe-61576458508649/",
+  "inboxUrl": "https://www.facebook.com/messages/t",
+  "pageName": "Scala Fe",
+  "verifiedPage": false,
+  "allowSending": false,
+  "pollSeconds": 3,
+  "dailyLimit": 100,
+  "selectors": null,
+  "comments": {
+    "ownerId": "61576458508649",
+    "monitor": "notifications",
+    "timeZone": "America/La_Paz",
+    "notificationRefreshSeconds": 30,
+    "maxCommentAgeSeconds": 86400,
+    "postUrls": [
+      "https://www.facebook.com/reel/1079349435002481/"
+    ],
+    "productByPost": {
+      "https://www.facebook.com/reel/1079349435002481/": "gedeon"
+    },
+    "selectors": {
+      "identity": "[role=\"textbox\"][aria-label=\"Comentar como Scala Fe\"]",
+      "postScope": "[role=\"complementary\"]:has([role=\"textbox\"][aria-label=\"Comentar como Scala Fe\"]), [role=\"dialog\"]:not(:has([role=\"dialog\"])):has([role=\"textbox\"][aria-label=\"Comentar como Scala Fe\"])",
+      "postAuthor": "h3 a[role=\"link\"], h2 a[role=\"link\"]",
+      "commentRows": "[role=\"article\"][aria-label^=\"Comentario de \"]",
+      "commentAuthor": "a[role=\"link\"][aria-hidden=\"false\"][href]",
+      "commentText": "span[dir=\"auto\"][lang]",
+      "commentTime": "a[role=\"link\"][aria-label][href*=\"comment_id=\"]",
+      "replyRows": "[role=\"article\"][aria-label^=\"Respuesta de \"]",
+      "timeAttribute": "aria-label",
+      "timeFormat": "spanish-civil"
+    }
+  }
+}
