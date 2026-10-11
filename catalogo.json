@@ -6,12 +6,16 @@
       "title": "Gedeón, el valiente obediente",
       "category": "books",
       "format": "Cuento digital PDF",
-      "description": "Una historia infantil sobre Gedeón, basada en Jueces 6–7.",
+      "description": "Una historia basada en Jueces 6 y 7 para compartir con los niños y conversar sobre la valentía, la fe y la obediencia.",
+      "details": "Está basado en la historia de Jueces 6 y 7. Acompaña a Gedeón mientras aprende a confiar en Dios y enfrentar sus temores. Su formato es digital PDF para disfrutarlo en familia.",
       "aliases": ["gedeon", "valiente obediente"],
       "price": null,
       "url": null,
       "delivery": null
     }
   ],
-  "paymentInstructions": null
+  "paymentInstructions": null,
+  "paymentMethods": [],
+  "paymentDetails": null,
+  "attentionHours": null
 }

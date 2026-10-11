@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { decideReply, normalize } from './catalog.mjs';
+import { customerText } from './messages.mjs';
 
 export function normalizePeer(jid) {
   if (typeof jid !== 'string') return null;
@@ -10,19 +11,22 @@ export function timestamp(message) {
   const n = Number(message.messageTimestamp?.toString?.() ?? message.messageTimestamp);
   return Number.isFinite(n) && n > 0 ? n*1000 : 0;
 }
-export function readText(message) {
+export function readIncoming(message) {
   let m = message.message;
   for(let i=0;i<4;i++) {
     if(m?.ephemeralMessage?.message) m = m.ephemeralMessage.message;
     else if(m?.documentWithCaptionMessage?.message) m = m.documentWithCaptionMessage.message;
     else break;
   }
-  if(!m) return null;
+  if(!m) return { text: null, hasAttachment: false, attachmentType: null };
   const text = m.conversation ?? m.extendedTextMessage?.text ?? m.buttonsResponseMessage?.selectedButtonId ?? m.listResponseMessage?.singleSelectReply?.selectedRowId;
-  if(typeof text === 'string') return text.slice(0,2000);
   const attachments = ['imageMessage','videoMessage','audioMessage','documentMessage','stickerMessage','contactMessage','contactsArrayMessage','locationMessage','liveLocationMessage','viewOnceMessage','viewOnceMessageV2'];
-  return attachments.some(k => m[k]) ? '__attachment__' : null;
+  const kind = attachments.find(k => m[k]);
+  const caption = m.imageMessage?.caption ?? m.documentMessage?.caption ?? m.videoMessage?.caption;
+  return { text: typeof text === 'string' ? text.slice(0,2000) : typeof caption === 'string' && caption.trim() ? caption.slice(0,2000) : kind ? '__attachment__' : null,
+    hasAttachment: !!kind, attachmentType: kind ? kind.replace(/Message$/, '') : null };
 }
+export const readText = message => readIncoming(message).text;
 export function renderReply(reply) {
   if(!reply) return { text:null, options:{} };
   if(reply.type === 'text') return { text:reply.text.body, options:{} };
@@ -30,7 +34,8 @@ export function renderReply(reply) {
   const choices = interactive.type === 'list' ? interactive.action.sections.flatMap(s=>s.rows) : interactive.action.buttons.map(b=>b.reply);
   const options = Object.fromEntries(choices.map((c,i)=>[String(i+1),c.id]));
   const rows = choices.map((c,i)=>`${i+1}. ${c.title}${c.description ? ' — '+c.description : ''}`);
-  return { text:`${interactive.body.text}\n\n${rows.join('\n')}\n\nEscribe el *número* de la opción que prefieras.\n*MENÚ*: volver al inicio · *BAJA*: pausar respuestas.`, options };
+  const footer = customerText('Escribe el *número* de la opción que prefieras.\n*MENÚ*: volver al inicio · *BAJA*: pausar respuestas.', {}, reply.formal);
+  return { text:`${interactive.body.text}\n\n${rows.join('\n')}\n\n${footer}`, options };
 }
 
 export class MessageHandler {
@@ -63,7 +68,7 @@ export class MessageHandler {
   async process(message, peer, remote) {
     const time = timestamp(message), now = this.now(), id = message.key.id;
     if(!time || time < Math.max(this.bootTime-300000,now-300000) || time > now+60000) return;
-    const input = readText(message);
+    const incoming = readIncoming(message), input = incoming.text;
     if(input === null) return;
     const contact = this.store.contact(peer);
     if(message.key.fromMe) {
@@ -80,12 +85,15 @@ export class MessageHandler {
     if(!this.store.claim('in',id)) return;
     const n = normalize(input);
     const translated = contact.options[n] || input;
-    const result = decideReply(translated,contact,this.catalog,now);
+    const result = decideReply(translated,contact,this.catalog,now,{...incoming,trustedOrders:this.store.trustedOrders(peer)});
     const rendered = renderReply(result.reply);
     const restarted = ['menu','inicio','activar','activar bot','bot'].includes(n);
     this.store.saveContact(peer,{
       ...contact, product_id:result.next.productId, handoff_until:result.next.handoffUntil,
       stopped:result.next.stopped, options:rendered.options, last_inbound_at:time,
+      welcomed:result.next.welcomed, formal:result.next.formal,
+      awaiting_receipt:result.next.awaitingReceipt, receipt_received:result.next.receiptReceived,
+      hours_notice_key:result.next.hoursNoticeKey,
       restarted_at:restarted ? now : contact.restarted_at, updated_at:now,
     });
     if(!rendered.text) { this.store.mark('in',id,'ignored'); return; }

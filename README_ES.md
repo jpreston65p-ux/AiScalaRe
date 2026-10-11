@@ -2,7 +2,7 @@
 
 Este proyecto conecta tu WhatsApp Business como un dispositivo vinculado. Escaneas un QR desde el celular. No requiere crear una empresa en Meta Business Suite ni proporcionar una API key para funcionar.
 
-**Estado de la entrega:** código preparado y probado con mensajes simulados. Todavía no hay un número vinculado ni un servidor tuyo de la nube instalado. El QR real aparece cuando ejecutas el proyecto y WhatsApp lo emite; no se incluye un QR falso en el ZIP.
+**Estado de la entrega:** código preparado y probado con mensajes simulados. El servicio de SCALA está desplegado y vinculado en Railway; esta guía también permite instalar una instancia local distinta. El QR real aparece cuando WhatsApp lo emite y nunca se incluye un QR falso en el proyecto. Ejecuta una sola instancia para cada sesión vinculada.
 
 Baileys es una biblioteca no oficial. WhatsApp puede desconectar o restringir el uso; no se garantiza una conexión permanente ni compatibilidad después de cambios del servicio. Úsalo para atender mensajes que tus clientes te envían. Este proyecto no hace campañas, envíos masivos ni inicia conversaciones.
 
@@ -96,15 +96,16 @@ bash DIAGNOSTICO_SCALA.sh
 bash CONTROLAR_SCALA.sh reiniciar
 ```
 
-Cada producto tiene `id`, `title`, `category`, `format`, `description`, `aliases`, `price`, `url` y `delivery`. Añade productos al arreglo `products`. Los IDs deben ser únicos, con letras minúsculas, números, guion o guion bajo.
+Cada producto tiene `id`, `title`, `category`, `format`, `description`, `details`, `aliases`, `price`, `url` y `delivery`. Añade únicamente productos confirmados al arreglo `products`. Los IDs deben ser únicos, con letras minúsculas, números, guion o guion bajo. Los enlaces de descarga se autorizan por cliente desde la consola privada; no se muestran desde `url` o `delivery` del catálogo.
 
-Para precio confirmado, sustituye `null` en `price` por un objeto con tu monto real y moneda: `{"amount": TU_MONTO_NUMERICO, "currency": "BOB"}`. `TU_MONTO_NUMERICO` es una explicación, no un valor válido para pegar en JSON. Usa `paymentInstructions` para las instrucciones de pago autorizadas; `url` debe ser HTTPS. Conserva `null` para lo que todavía no esté confirmado.
+Para precio confirmado, sustituye `null` en `price` por un objeto con tu monto real y moneda: `{"amount": TU_MONTO_NUMERICO, "currency": "BOB"}`. `TU_MONTO_NUMERICO` es una explicación, no un valor válido para pegar en JSON. Configura `paymentMethods` como arreglo de métodos confirmados y `paymentDetails` con los datos reales. La guía de pago requiere precio, métodos y datos completos. El campo antiguo `paymentInstructions` por sí solo no habilita una guía de pago. Conserva `null` o un arreglo vacío para lo que todavía no esté confirmado. Más detalles en [la política de atención](POLITICA_ATENCION_SCALA.md).
 
 El bot permite saludo, menú con opciones numéricas, catálogo paginado, fichas de productos, información del PDF y enlace de SCALA. Los clientes pueden escribir su consulta además de elegir números.
 
 - `MENÚ`: vuelve al menú y reactiva las respuestas.
 - `BAJA`: detiene respuestas automáticas hasta que el cliente las reactive.
-- Atención humana, compra, datos pendientes, archivos y audios: el bot pausa 24 horas para que atiendas en ese mismo chat. No crea pedidos ni confirma pagos.
+- Una solicitud explícita de atención humana pausa el bot durante 24 horas para que atiendas en ese mismo chat. No anuncia una transferencia, notificación o solicitud registrada. Comprar, preguntar datos pendientes o enviar un archivo no pausa automáticamente las consultas.
+- Un comprobante queda pendiente de verificación. Solo una persona autorizada puede confirmar el pago mediante la herramienta privada de Railway; la descarga requiere además autorización y un enlace real. No hay verificación bancaria automática.
 - Si respondes manualmente desde el celular y WhatsApp entrega ese evento al bot, se activa la pausa humana. No responde a sus propios mensajes.
 - Ignora grupos, estados, canales, historial y mensajes antiguos. Solo atiende notificaciones nuevas de chats individuales.
 
@@ -133,11 +134,11 @@ El volumen `scala_session` conserva las credenciales. No ejecutes `down -v` si q
 
 ## Datos y límites
 
-`data/scala.sqlite` conserva credenciales y claves Signal necesarias para el dispositivo, preferencias, pausas, bajas, cuotas y deduplicación. Las claves de sesión contienen datos privados; protege esta carpeta y nunca la subas a GitHub, compartas el QR ni entregues el archivo de la sesión. No guarda el texto, audio, imagen o nombre de los clientes para el catálogo. Los identificadores de chats y mensajes de esa lógica se guardan con HMAC; la autenticación de WhatsApp sí necesita sus propias claves e identificadores.
+`data/scala.sqlite` conserva credenciales y claves Signal necesarias para el dispositivo, preferencias, pausas, bajas, cuotas, deduplicación y autorizaciones privadas de entrega. Las claves de sesión contienen datos privados; protege esta carpeta y nunca la subas a GitHub, compartas el QR ni entregues el archivo de la sesión. No guarda el texto, audio, imagen o nombre de los clientes para el catálogo. Los identificadores de chats y mensajes de esa lógica se guardan con HMAC; la autenticación de WhatsApp sí necesita sus propias claves e identificadores.
 
 El servicio no abre puertos. Los logs de aplicación muestran eventos y horas, sin mensajes, teléfonos o claves. SQLite guarda credenciales y claves de sesión con serialización BufferJSON. Las respuestas salientes del catálogo se conservan hasta 24 horas para atender solicitudes de reenvío del propio protocolo de WhatsApp. Se conserva la respuesta del bot, no el texto recibido del cliente. Un bloqueo de instancia impide utilizar simultáneamente el mismo directorio de datos.
 
-Límites predeterminados: 10 mensajes/minuto y 100/día por chat; 1000 mensajes/día globales. Deduplicación: ocho días. Se limpian preferencias ordinarias tras 30 días de inactividad; las bajas se conservan. Mensajes de más de cinco minutos y notificaciones de historial se ignoran para evitar responder en masa tras reconectar. Si un envío tiene resultado incierto, la lógica del bot no crea una segunda respuesta al repetirse la notificación; WhatsApp puede solicitar retransmisión del mensaje original con el mismo ID. No se garantiza entrega exactamente una vez ni que todas las notificaciones de WhatsApp lleguen al dispositivo.
+Límites predeterminados: 10 mensajes/minuto y 100/día por chat; 1000 mensajes/día globales. Deduplicación: ocho días. Se limpian preferencias ordinarias tras 30 días de inactividad; las bajas y contactos con aprobaciones de compra se conservan. Mensajes de más de cinco minutos y notificaciones de historial se ignoran para evitar responder en masa tras reconectar. Si un envío tiene resultado incierto, la lógica del bot no crea una segunda respuesta al repetirse la notificación; WhatsApp puede solicitar retransmisión del mensaje original con el mismo ID. No se garantiza entrega exactamente una vez ni que todas las notificaciones de WhatsApp lleguen al dispositivo.
 
 ## Validación y fuentes
 

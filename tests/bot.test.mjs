@@ -31,11 +31,13 @@ test('un cliente recorre el menú, catálogo y ficha mediante opciones numérica
   assert.equal(f.store.contact(f.store.resolvePeer(['101@s.whatsapp.net'])).product_id,'gedeon');
 });
 
-test('precio pendiente deriva al equipo y MENÚ reactiva la atención',async t=>{
+test('precio pendiente permite seguir consultando y solo la solicitud humana pausa el bot',async t=>{
   const f=fixture(t);
   await f.emit('Gedeón'); await f.emit('cuánto cuesta');
-  assert.match(f.sent.at(-1).text,/precio vigente debe confirmarlo/);
-  const total=f.sent.length; await f.emit('quiero más información'); assert.equal(f.sent.length,total);
+  assert.match(f.sent.at(-1).text,/confirmar el precio actual/);
+  await f.emit('quiero más información'); assert.match(f.sent.at(-1).text,/Jueces 6 y 7/);
+  await f.emit('hablar con una persona');
+  const total=f.sent.length; await f.emit('pdf'); assert.equal(f.sent.length,total);
   await f.emit('MENÚ'); assert.equal(f.sent.length,total+1);
   await f.emit('pdf'); assert.match(f.sent.at(-1).text,/archivo digital/);
 });

@@ -89,7 +89,9 @@ Esto pausa el bot, descarta únicamente sus credenciales y solicita un QR nuevo.
 
 ## Catálogo y atención
 
-Edita `catalogo.json` para cambiar los productos y redepliega conservando el volumen. Los precios y formas de pago sin confirmar se derivan a atención humana. `BAJA` detiene las respuestas para ese cliente y `MENÚ` reactiva el bot. Una respuesta manual del equipo pausa la atención automática de ese chat.
+Edita `catalogo.json` para cambiar los productos y redepliega conservando el volumen. Los precios y formas de pago sin confirmar se indican como pendientes; el cliente puede seguir consultando. `BAJA` detiene las respuestas para ese cliente y `MENÚ` reactiva el bot. Una solicitud explícita de atención humana o una respuesta manual del equipo pausa la atención automática de ese chat.
+
+Consulta [la política de atención](POLITICA_ATENCION_SCALA.md) para configurar precio, métodos de pago y horario. Cuando una persona autorizada haya verificado realmente un pago, puede ejecutar **`node scripts/autorizar-entrega.mjs`** en la consola web privada del servicio. La herramienta permite confirmar ese pago, autorizar la entrega y guardar un enlace HTTPS real para ese cliente y producto. No verifica el banco ni envía mensajes por sí sola. El bot podrá incluir el enlace cuando el cliente consulte el pago o solicite su entrega. Si el chat está pausado, el cliente puede escribir **MENÚ**. No publiques el enlace del producto en el catálogo público.
 
 El método QR utiliza una biblioteca externa para vincular un dispositivo, no la API oficial de WhatsApp. Su compatibilidad puede cambiar y WhatsApp puede cerrar la sesión. No se debe prometer disponibilidad ininterrumpida.
 

@@ -1,6 +1,6 @@
 SCALA WhatsApp por QR — 11 de octubre de 2026
 
-28 pruebas de comportamiento, persistencia y ejecución en nube aprobadas.
+45 pruebas de comportamiento, persistencia, política de atención y ejecución en nube aprobadas.
 Corrección de detección de credenciales QR: se comprueba creds.me.id;
 registered puede seguir en false después de vincular por QR.
 El diagnóstico acepta esas credenciales y sigue rechazando una sesión invalidada.
@@ -40,4 +40,17 @@ no oficial y no ofrece garantía de disponibilidad permanente.
 Revisión de los mensajes: saludo, catálogo, compra, precio, pago, entrega,
 archivos, web, agradecimiento, atención personal y baja con texto más claro.
 El catálogo muestra títulos completos. Se mantienen las opciones numéricas,
-las pausas, MENÚ y BAJA. Las 28 pruebas existentes aprobaron tras el cambio.
+las pausas, MENÚ y BAJA. Las 28 pruebas existentes aprobaron tras esa revisión.
+
+Política de atención SCALA incorporada el 11 de octubre de 2026:
+bienvenida con identidad virtual, trato tú/usted persistente, consultas directas
+y múltiples, catálogo confirmado, campos pendientes sin marcadores, precio y
+pago sin datos inventados, comprobantes pendientes, horario con zona IANA,
+agradecimiento breve y despedida con la frase de marca.
+Las 45 pruebas aprobaron. La herramienta de aprobación requiere consola
+privada y volumen persistente. La autorización es específica del cliente y
+producto, persiste al reiniciar y necesita enlace HTTPS y autorización antes
+de anunciar la entrega. Un comprobante o texto del cliente nunca confirma
+el pago. No se verificó ni aprobó ningún pago real en estas pruebas.
+Solo una solicitud explícita de atención humana o una respuesta manual pausa
+las consultas; preguntar datos pendientes permite continuar con el catálogo.

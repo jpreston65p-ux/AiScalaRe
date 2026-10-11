@@ -15,6 +15,7 @@ export class Store {
       CREATE TABLE IF NOT EXISTS auth (category TEXT NOT NULL, id TEXT NOT NULL, value TEXT NOT NULL, PRIMARY KEY(category,id));
       CREATE TABLE IF NOT EXISTS contacts (id TEXT PRIMARY KEY, value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS aliases (alias TEXT PRIMARY KEY, contact TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS orders (contact TEXT NOT NULL, product TEXT NOT NULL, value TEXT NOT NULL, updated INTEGER NOT NULL, PRIMARY KEY(contact,product));
       CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, state TEXT NOT NULL, expires INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS events_expiry ON events(expires);
       CREATE TABLE IF NOT EXISTS outbound (id TEXT PRIMARY KEY, text TEXT NOT NULL, expires INTEGER NOT NULL);
@@ -44,6 +45,20 @@ export class Store {
     return row ? JSON.parse(row.value) : { product_id: null, handoff_until: 0, stopped: false, options: {}, last_inbound_at: 0, restarted_at: 0, updated_at: 0 };
   }
   saveContact(id, value) { this.db.prepare('INSERT INTO contacts VALUES (?,?) ON CONFLICT(id) DO UPDATE SET value=excluded.value').run(id, JSON.stringify(value)); }
+  trustedOrders(id) {
+    return Object.fromEntries(this.db.prepare('SELECT product,value FROM orders WHERE contact=?').all(id).map(row => [row.product, JSON.parse(row.value)]));
+  }
+  setTrustedOrder(id, product, approval) {
+    if (!this.db.prepare('SELECT id FROM contacts WHERE id=?').get(id) || !/^[a-z0-9_-]{1,40}$/.test(product) || approval?.paymentConfirmed !== true || typeof approval.deliveryAuthorized !== 'boolean') throw new Error('invalid_approval');
+    let downloadUrl = null;
+    if (approval.downloadUrl != null && approval.downloadUrl !== '') {
+      try { const url = new URL(approval.downloadUrl); if (url.protocol !== 'https:' || url.username || url.password || /\[[^\]]+\]/.test(approval.downloadUrl) || approval.downloadUrl.length > 2048) throw new Error(); downloadUrl = url.href; }
+      catch { throw new Error('invalid_download_url'); }
+    }
+    const updated = this.now();
+    const value = { source: 'owner_console', paymentConfirmed: true, deliveryAuthorized: approval.deliveryAuthorized, downloadUrl, verifiedAt: updated };
+    this.db.prepare('INSERT INTO orders VALUES (?,?,?,?) ON CONFLICT(contact,product) DO UPDATE SET value=excluded.value,updated=excluded.updated').run(id, product, JSON.stringify(value), updated);
+  }
   knownPeers(addresses) {
     return [...new Set(addresses.map(jid => this.db.prepare('SELECT contact FROM aliases WHERE alias=?').get(this.hash('peer:' + jid))?.contact).filter(Boolean))];
   }
@@ -62,6 +77,10 @@ export class Store {
         merged.last_inbound_at = Math.max(...rows.map(r => r.last_inbound_at || 0));
         this.saveContact(id, merged);
         for (const old of known.slice(1)) {
+          for (const order of this.db.prepare('SELECT product,value,updated FROM orders WHERE contact=?').all(old)) {
+            this.db.prepare('INSERT INTO orders VALUES (?,?,?,?) ON CONFLICT(contact,product) DO UPDATE SET value=excluded.value,updated=excluded.updated WHERE excluded.updated > orders.updated').run(id, order.product, order.value, order.updated);
+          }
+          this.db.prepare('DELETE FROM orders WHERE contact=?').run(old);
           this.db.prepare('UPDATE aliases SET contact=? WHERE contact=?').run(id, old);
           this.db.prepare('DELETE FROM contacts WHERE id=?').run(old);
         }
@@ -104,7 +123,7 @@ export class Store {
     this.db.prepare('DELETE FROM outbound WHERE expires<?').run(this.now());
     this.db.prepare('DELETE FROM quotas WHERE expires<?').run(this.now());
     const oldest = this.now()-30*86400000;
-    const expired = this.db.prepare('SELECT id FROM contacts WHERE CAST(json_extract(value,\'$.updated_at\') AS INTEGER)<? AND json_extract(value,\'$.stopped\')=0').all(oldest);
+    const expired = this.db.prepare('SELECT id FROM contacts WHERE CAST(json_extract(value,\'$.updated_at\') AS INTEGER)<? AND json_extract(value,\'$.stopped\')=0 AND NOT EXISTS (SELECT 1 FROM orders WHERE orders.contact=contacts.id)').all(oldest);
     this.transaction(() => { for(const {id} of expired) { this.db.prepare('DELETE FROM contacts WHERE id=?').run(id); this.db.prepare('DELETE FROM aliases WHERE contact=?').run(id); } });
   }
   close() { this.db.close(); }
