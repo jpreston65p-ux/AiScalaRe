@@ -17,13 +17,17 @@ try{
   await page.setContent('<!doctype html><title>SCALA</title><p>Comprobación de SCALA</p>');
   if(await page.locator('p').innerText()!=='Comprobación de SCALA')throw new Error('browser_probe_failed');
   if(engine==='firefox'){
-    await page.goto('about:support',{waitUntil:'domcontentloaded'});
+    // Firefox's internal support page does not emit the ordinary web-page
+    // DOMContentLoaded event through every Playwright build. Check its own
+    // visible diagnostics instead of treating that event as sandbox evidence.
+    try{await page.goto('about:support',{waitUntil:'commit',timeout:15000});}
+    catch(error){if(error.name!=='TimeoutError' || page.url()!=='about:support')throw error;}
     const table=page.locator('#sandbox-tbody');
     await table.locator('th[data-l10n-id="effective-content-sandbox-level"]').waitFor({timeout:15000});
     const values=await table.evaluate(element=>Object.fromEntries(Array.from(element.querySelectorAll('tr')).map(row=>[row.querySelector('th')?.getAttribute('data-l10n-id'),row.querySelector('td')?.textContent?.trim()])));
     const level=Number(values['effective-content-sandbox-level']);
+    console.log('SCALA_FIREFOX_SANDBOX: '+JSON.stringify({seccomp:values['has-seccomp-bpf'],content:values['can-sandbox-content'],effectiveLevel:level,userNamespaces:values['has-user-namespaces']}));
     if(values['has-seccomp-bpf']!=='true' || values['can-sandbox-content']!=='true' || !Number.isInteger(level) || level<4)throw new Error('firefox_content_sandbox_unverified');
-    console.log('SCALA_FIREFOX_SANDBOX: '+JSON.stringify({seccomp:true,content:true,effectiveLevel:level,userNamespaces:values['has-user-namespaces']}));
   }
   state='listo_para_vincular';
   console.log('SCALA_BROWSER_CHECK_OK: '+engine+' con aislamiento funciona. La sesión de Facebook sigue pendiente.');
