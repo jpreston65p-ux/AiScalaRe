@@ -15,8 +15,9 @@ vinculado un número ni enviado mensajes reales de WhatsApp. La conexión
 final necesita escanear el QR y comprobar un mensaje entrante desde otro
 número. El servicio de Railway conserva el proceso mientras espera el QR,
 rechaza discos temporales, espera el bloqueo de vinculación y recupera un
-proceso caído. No se ha desplegado todavía en Railway ni comprobado una
-conexión real. Requiere un volumen persistente y crédito disponible.
+proceso caído. Estas pruebas no verifican una conexión real con WhatsApp.
+Requiere un volumen persistente y crédito disponible; el estado del
+despliegue y una respuesta real se comprueban por separado en Railway.
 
 El contenedor Docker se incluye como alternativa; no se ha ejecutado
 una compilación de Docker en este entorno. La unidad de systemd se

@@ -7,7 +7,7 @@ En Railway funciona mientras el servicio esté desplegado, tenga conexión con W
 ## Configuración del servicio
 
 1. Fuente: la rama `scala-whatsapp-cloud` de `jpreston65p-ux/AiScalaRe`, raíz `/`. El sitio web usa su propia rama `main`.
-2. Compilación: Dockerfile. `railway.json` ejecuta `node src/railway.mjs`.
+2. Compilación: Dockerfile. Configura el comando de inicio **`node src/railway.mjs`** en el servicio. Este proyecto ya está configurado mediante la conexión de Railway; no usa el formato antiguo `railway.json`.
 3. Un solo servicio y una sola réplica. Adjunta un volumen persistente a **`/app/data`** antes de vincular. No uses un disco temporal para guardar la sesión.
 4. Variables: **`SCALA_DATA_DIR=/app/data`**, **`RAILWAY_RUN_UID=0`** para permitir el acceso al volumen de Railway. Opcional: `SCALA_DAILY_LIMIT=1000`.
 5. Desactiva el modo de suspensión/serverless. Es un proceso continuo y no necesita dominio público ni puerto HTTP.
@@ -17,7 +17,17 @@ El proceso se mantiene esperando mientras falta la sesión. El QR nunca aparece 
 
 ## Vinculación privada desde Linux Mint
 
-Instala/inicia sesión en la CLI oficial de Railway desde tu terminal. Abre la consola SSH del servicio con `railway ssh` seleccionando el proyecto y el servicio de SCALA. La CLI puede pedir registrar tu clave SSH la primera vez.
+Descarga **`VINCULAR_RAILWAY_MINT.sh`** en Descargas y ejecútalo desde tu terminal:
+
+```bash
+bash "$(xdg-user-dir DOWNLOAD)/VINCULAR_RAILWAY_MINT.sh"
+```
+
+El archivo utiliza la CLI oficial de Railway fijada en la versión 5.64.2, pide iniciar sesión si hace falta y abre el proyecto y servicio de SCALA con sus identificadores reales. La CLI puede pedir registrar tu clave SSH la primera vez. Si el bot local está activo, lo detiene para evitar respuestas duplicadas.
+
+Proyecto: [SCALA WhatsApp en Railway](https://railway.com/project/86dc9c33-9042-48a9-8201-b94e04232179).
+
+También puedes instalar/iniciar sesión en la CLI oficial por tu cuenta y abrir `railway ssh` seleccionando el proyecto y el servicio de SCALA.
 
 Antes de vincular, si tienes el servicio antiguo ejecutándose en tu PC, detenlo para evitar respuestas duplicadas:
 
