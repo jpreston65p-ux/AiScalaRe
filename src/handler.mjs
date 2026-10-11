@@ -30,7 +30,7 @@ export function renderReply(reply) {
   const choices = interactive.type === 'list' ? interactive.action.sections.flatMap(s=>s.rows) : interactive.action.buttons.map(b=>b.reply);
   const options = Object.fromEntries(choices.map((c,i)=>[String(i+1),c.id]));
   const rows = choices.map((c,i)=>`${i+1}. ${c.title}${c.description ? ' — '+c.description : ''}`);
-  return { text:`${interactive.body.text}\n\n${rows.join('\n')}\n\nResponde con el número de la opción. MENÚ: reiniciar · BAJA: detener el bot.`, options };
+  return { text:`${interactive.body.text}\n\n${rows.join('\n')}\n\nEscribe el *número* de la opción que prefieras.\n*MENÚ*: volver al inicio · *BAJA*: pausar respuestas.`, options };
 }
 
 export class MessageHandler {

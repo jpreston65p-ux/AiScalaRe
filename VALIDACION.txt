@@ -10,10 +10,12 @@ Importación de Baileys y SQLite verificada en Linux.
 Sintaxis de los scripts Bash comprobada.
 Auditoría de las dependencias: sin vulnerabilidades reportadas por npm en esta revisión.
 
-Las pruebas usan mensajes ficticios y un transporte simulado. No se ha
-vinculado un número ni enviado mensajes reales de WhatsApp. La conexión
-final necesita escanear el QR y comprobar un mensaje entrante desde otro
-número. El servicio de Railway conserva el proceso mientras espera el QR,
+Las pruebas automatizadas usan mensajes ficticios y un transporte simulado.
+Además, el despliegue real registró whatsapp_conectado el 11 de octubre de
+2026 a las 04:49:15 UTC y tres respuesta_enviada entre las 04:49:38 y las
+04:49:58 UTC. Esto confirma conexión y envíos aceptados por el SDK, sin
+inspeccionar mensajes ni números privados; no confirma lectura del cliente.
+El servicio de Railway conserva el proceso mientras espera el QR,
 rechaza discos temporales, espera el bloqueo de vinculación y recupera un
 proceso caído. Estas pruebas no verifican una conexión real con WhatsApp.
 Requiere un volumen persistente y crédito disponible; el estado del
@@ -22,8 +24,8 @@ despliegue y una respuesta real se comprueban por separado en Railway.
 Despliegue Docker real verificado en Railway el 11 de octubre de 2026:
 ef91826b-cd3d-427c-ac6d-5f4371f026f0, estado SUCCESS, una réplica activa
 sin errores y volumen persistente de 500 MB montado en /app/data.
-Node.js 24.21.0 comprobado en el contenedor. La consola privada muestra
-sesionGuardada=false y necesitaQr=true, como corresponde antes de vincular.
+Node.js 24.21.0 comprobado en el contenedor. Antes de vincular, la consola
+privada mostró sesionGuardada=false y necesitaQr=true.
 La conexión TLS validada con web.whatsapp.com:443 fue satisfactoria.
 Esto verifica acceso de red, no vinculación ni entrega de mensajes.
 La consola web permite vincular sin añadir una clave SSH. El diagnóstico
@@ -34,3 +36,8 @@ como archivo, sin instalar un servicio en este entorno.
 
 Una sesión guardada no garantiza acceso vigente. Baileys es una conexión
 no oficial y no ofrece garantía de disponibilidad permanente.
+
+Revisión de los mensajes: saludo, catálogo, compra, precio, pago, entrega,
+archivos, web, agradecimiento, atención personal y baja con texto más claro.
+El catálogo muestra títulos completos. Se mantienen las opciones numéricas,
+las pausas, MENÚ y BAJA. Las 28 pruebas existentes aprobaron tras el cambio.
