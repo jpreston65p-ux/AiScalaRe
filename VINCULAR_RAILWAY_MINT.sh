@@ -34,7 +34,7 @@ if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet scala-wha
   printf '%s\n' 'Deteniendo el bot local para evitar respuestas duplicadas con el servidor.'
   sudo systemctl stop scala-whatsapp-qr.service
 fi
-printf '%s\n' 'Abriendo el servidor. Railway puede pedir registrar una clave SSH la primera vez.'
+printf '%s\n' 'Abriendo el servidor con tu clave SSH personal ya registrada en Railway.' 'Si no tienes una clave SSH, usa scala-whatsapp → Console en Railway y ejecuta: node scripts/vincular-nube.mjs'
 if "${SCALA_RAILWAY[@]}" ssh \
   --project 86dc9c33-9042-48a9-8201-b94e04232179 \
   --service addfbe69-28c0-4ff7-91f2-9b045e49e633 \

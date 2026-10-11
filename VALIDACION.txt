@@ -19,9 +19,18 @@ proceso caído. Estas pruebas no verifican una conexión real con WhatsApp.
 Requiere un volumen persistente y crédito disponible; el estado del
 despliegue y una respuesta real se comprueban por separado en Railway.
 
-El contenedor Docker se incluye como alternativa; no se ha ejecutado
-una compilación de Docker en este entorno. La unidad de systemd se
-comprueba como archivo, sin instalar un servicio en este entorno.
+Despliegue Docker real verificado en Railway el 11 de octubre de 2026:
+ef91826b-cd3d-427c-ac6d-5f4371f026f0, estado SUCCESS, una réplica activa
+sin errores y volumen persistente de 500 MB montado en /app/data.
+Node.js 24.21.0 comprobado en el contenedor. La consola privada muestra
+sesionGuardada=false y necesitaQr=true, como corresponde antes de vincular.
+La conexión TLS validada con web.whatsapp.com:443 fue satisfactoria.
+Esto verifica acceso de red, no vinculación ni entrega de mensajes.
+La consola web permite vincular sin añadir una clave SSH. El diagnóstico
+no mostró claves, teléfonos, mensajes de clientes ni códigos QR.
+
+No se compiló Docker localmente. La unidad de systemd se comprueba
+como archivo, sin instalar un servicio en este entorno.
 
 Una sesión guardada no garantiza acceso vigente. Baileys es una conexión
 no oficial y no ofrece garantía de disponibilidad permanente.

@@ -15,7 +15,25 @@ En Railway funciona mientras el servicio esté desplegado, tenga conexión con W
 
 El proceso se mantiene esperando mientras falta la sesión. El QR nunca aparece en los logs del despliegue. El servidor comprueba el volumen, espera a que finalice la vinculación y después inicia el bot. La base contiene credenciales privadas: no publiques ni compartas `/app/data`, copias de la base o códigos QR.
 
-## Vinculación privada desde Linux Mint
+## Vinculación desde la consola web privada
+
+En Railway, abre el servicio **scala-whatsapp → Console**. Esta consola utiliza tu sesión de Railway y no necesita instalar la CLI ni registrar una clave SSH nueva.
+
+Antes de escanear, detén el bot antiguo en la terminal de tu PC para evitar respuestas duplicadas:
+
+```bash
+sudo systemctl stop scala-whatsapp-qr.service
+```
+
+En la consola web de Railway ejecuta:
+
+```bash
+node scripts/vincular-nube.mjs
+```
+
+En el celular abre **WhatsApp Business → Dispositivos vinculados → Vincular un dispositivo** y escanea el QR de esa consola. La vinculación guarda las credenciales en el volumen privado y el servidor inicia la atención automáticamente. Comprueba una respuesta real desde otro número antes de apagar tu PC.
+
+## Alternativa desde la terminal de Linux Mint
 
 Descarga **`VINCULAR_RAILWAY_MINT.sh`** en Descargas y ejecútalo desde tu terminal:
 
@@ -23,7 +41,7 @@ Descarga **`VINCULAR_RAILWAY_MINT.sh`** en Descargas y ejecútalo desde tu termi
 bash "$(xdg-user-dir DOWNLOAD)/VINCULAR_RAILWAY_MINT.sh"
 ```
 
-El archivo utiliza la CLI oficial de Railway fijada en la versión 5.64.2, pide iniciar sesión si hace falta y abre el proyecto y servicio de SCALA con sus identificadores reales. La CLI puede pedir registrar tu clave SSH la primera vez. Si el bot local está activo, lo detiene para evitar respuestas duplicadas.
+El archivo utiliza la CLI oficial de Railway fijada en la versión 5.64.2, pide iniciar sesión si hace falta y abre el proyecto y servicio de SCALA con sus identificadores reales. Este método requiere una clave SSH personal ya registrada en Railway; el script no la genera ni la registra. Si no tienes una, utiliza la consola web descrita arriba. Si el bot local está activo, el archivo lo detiene para evitar respuestas duplicadas.
 
 Proyecto: [SCALA WhatsApp en Railway](https://railway.com/project/86dc9c33-9042-48a9-8201-b94e04232179).
 
@@ -61,7 +79,7 @@ Una sesión guardada o un despliegue activo por sí solos no prueban que WhatsAp
 
 ## Si WhatsApp desvincula la sesión
 
-Abre de nuevo `railway ssh` y ejecuta:
+Abre de nuevo la consola web privada del servicio o `railway ssh` y ejecuta:
 
 ```bash
 node scripts/vincular-nube.mjs --revincular
