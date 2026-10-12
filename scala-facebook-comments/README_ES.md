@@ -1,5 +1,14 @@
 # SCALA · Comentarios en el Scala Fe actual
 
+**Estado comprobado el 12 de octubre de 2026: pausado por falta de memoria.**
+El navegador llegó a leer comentarios, pero alcanzó el límite de 1 GB y agotó
+el tiempo al cargar los avisos. No se confirmó ninguna respuesta automática.
+El panel y `/health` muestran la pausa configurada con
+`SCALA_FACEBOOK_PAUSE_REASON=memory_limit`; el servidor HTTP sigue disponible
+sin iniciar Firefox. La sesión y la deduplicación permanecen en el volumen privado.
+Para reanudar una prueba con recursos adecuados se elimina esa variable del
+comando de inicio y se despliega de nuevo. No se ha contratado una ampliación.
+
 Esta versión conserva el perfil profesional Scala Fe (61576458508649). Usa exclusivamente la sesión propia del programa que el administrador vincula desde Linux Mint a su servicio privado en Railway. La sesión de ChatGPT es independiente y nunca se exporta.
 
 El proceso abre los comentarios de los Reels en su vista normal, verifica el autor y la publicación, y usa una sola pestaña para alternar entre avisos y respuestas. Conserva los controles contra duplicados, respuestas inciertas, borradores de personas, fechas desconocidas y solicitudes de baja. No modifica publicaciones, no elimina comentarios ni confirma pagos o entregas.
@@ -12,7 +21,7 @@ El sitio vitacala.online y el servicio de WhatsApp son independientes de este ca
 
 ---
 
-# SCALA Facebook — comentarios desde la nube
+# SCALA Facebook — referencia del instalador de Linux Mint
 
 Actualización 0.3, 11 de octubre de 2026, hora de Bolivia.
 
@@ -105,7 +114,7 @@ npm test
 bash PROBAR_COMENTARIOS.sh
 ```
 
-75 pruebas aprobadas: 29 comentarios, 7 menú de orden, 7 panel de comentarios, 8 conexión/reintentos, 6 nube/aislamiento y 18 del chat anterior. Los transportes son simulados; la demo no publica. Una prueba del navegador no equivale a una prueba real del bot autenticado.
+96 pruebas aprobadas en la versión del 12 de octubre: comentarios, orden, panel, conexión, sesión propia, aislamiento, memoria, identidad de las vistas normales, recuperación y chat. Los transportes de las pruebas son simulados; la demo no publica. Una prueba del navegador no equivale a una prueba real del bot autenticado. También se comprobó por HTTP que la pausa no inicia el navegador y mantiene las respuestas desactivadas.
 
 La fuente pública excluye sesiones, perfiles, bases privadas, claves y dependencias instaladas. Conserva `verifiedPage=false` y `allowSending=false`; las comprobaciones reales y la vinculación son necesarias para habilitar envíos.
 

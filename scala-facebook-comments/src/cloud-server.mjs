@@ -6,7 +6,8 @@ import {cloudStartupDeadline} from './cloud-startup.mjs';
 import {statusPage,privacyPage} from './cloud-page.mjs';
 
 process.umask(0o077);
-let state=process.env[cloudTarget.variable]?'comprobando_cuenta':'pendiente_de_vincular';
+const pausedForMemory=process.env.SCALA_FACEBOOK_PAUSE_REASON==='memory_limit';
+let state=pausedForMemory?'memoria_insuficiente':process.env[cloudTarget.variable]?'comprobando_cuenta':'pendiente_de_vincular';
 let worker,lastReply=null,lastChecked=null,enabled=false,stopping=false,resourceTimer,cancelStartup;
 const server=createServer((request,response)=>{
   const send=(type,body,status=200)=>{response.writeHead(status,{'Content-Type':type,'Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'});response.end(body);};
@@ -18,7 +19,8 @@ const server=createServer((request,response)=>{
   return send('text/plain','No encontrado',404);
 });
 await new Promise(resolve=>server.listen(Number(process.env.PORT || 8080),'0.0.0.0',resolve));
-if(!process.env[cloudTarget.variable])console.log('SCALA_CLOUD_WAITING_LOGIN: Falta la sesión propia del programa.');
+if(pausedForMemory)console.log('SCALA_CLOUD_PAUSED_MEMORY: El navegador está detenido tras alcanzar el límite del alojamiento. No se publican respuestas.');
+else if(!process.env[cloudTarget.variable])console.log('SCALA_CLOUD_WAITING_LOGIN: Falta la sesión propia del programa.');
 else{
   worker=fork(new URL('./profile-worker.mjs',import.meta.url),[],{detached:true,execArgv:['--max-old-space-size=128'],
     env:{...process.env,SCALA_FACEBOOK_CLOUD:'1',SCALA_FACEBOOK_HEADLESS:'1',SCALA_FACEBOOK_BROWSER:'firefox'},stdio:['ignore','inherit','inherit','ipc']});
