@@ -7,6 +7,12 @@ export function commentsBrowserName(){
   return name;
 }
 
+export function cloudBrowserHeadless(env=process.env){
+  const mode=env.SCALA_FACEBOOK_HEADLESS ?? '1';
+  if(!['0','1'].includes(mode))throw new Error('invalid_cloud_browser_mode');
+  return mode==='1';
+}
+
 export const firefoxProtection={
   'security.sandbox.warn_unprivileged_namespaces':true,
   'security.fileuri.strict_origin_policy':true,

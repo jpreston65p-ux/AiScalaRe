@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {loadConfig,validateConfig} from './config.mjs';
-import {launchCommentsContext} from './browser-runtime.mjs';
+import {launchCommentsContext,cloudBrowserHeadless} from './browser-runtime.mjs';
 import {cloudTarget} from './cloud-session.mjs';
 
 process.umask(0o077);
@@ -19,8 +19,9 @@ const profile=mkdtempSync(join(tmpdir(),'scala-firefox-preflight-'));
 let context;
 try{
   process.env.SCALA_FACEBOOK_BROWSER='firefox';
+  const headless=cloudBrowserHeadless();
   const {config}=loadConfig({live:false});
-  context=await launchCommentsContext(profile,validateConfig({...config,verifiedPage:true,allowSending:true}),{headless:true});
+  context=await launchCommentsContext(profile,validateConfig({...config,verifiedPage:true,allowSending:true}),{headless});
   await context.close();context=null;
   console.log('SCALA_CLOUD_BROWSER_OK: Firefox y sus filtros propios de contenido comprobados.');
   if(!process.env[cloudTarget.variable]){
@@ -28,7 +29,7 @@ try{
     console.log('SCALA_CLOUD_WAITING_LOGIN: Vincula la sesión propia desde Linux Mint con CONECTAR_SCALA_FACEBOOK.sh --nube. Respuestas desactivadas.');
   }else{
     state='comprobando_cuenta';
-    worker=fork(new URL('./comments-index.mjs',import.meta.url),[],{env:{...process.env,SCALA_FACEBOOK_CLOUD:'1',SCALA_FACEBOOK_HEADLESS:'1'},stdio:['ignore','inherit','inherit','ipc']});
+    worker=fork(new URL('./comments-index.mjs',import.meta.url),[],{env:{...process.env,SCALA_FACEBOOK_CLOUD:'1',SCALA_FACEBOOK_HEADLESS:headless?'1':'0'},stdio:['ignore','inherit','inherit','ipc']});
     worker.on('message',message=>{
       if(message?.type!=='scala_status')return;
       if(message.state==='watching'){state='vigilando_comentarios';enabled=true;console.log('SCALA_CLOUD_WATCHING: Cuenta Scala Fe y controles verificados.');}

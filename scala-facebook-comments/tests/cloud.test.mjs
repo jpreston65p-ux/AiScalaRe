@@ -3,6 +3,14 @@ import assert from 'node:assert/strict';
 import {cloudTarget,encodeSessionPacket,decodeSessionPacket} from '../src/cloud-session.mjs';
 import {uploadSession} from '../src/cloud-upload.mjs';
 import {sandboxProcess,protectedFirefoxContent} from '../src/browser-sandbox.mjs';
+import {cloudBrowserHeadless} from '../src/browser-runtime.mjs';
+
+test('el servidor respeta la pantalla virtual y rechaza modos de navegador desconocidos',()=>{
+  assert.equal(cloudBrowserHeadless({}),true);
+  assert.equal(cloudBrowserHeadless({SCALA_FACEBOOK_HEADLESS:'0'}),false);
+  assert.equal(cloudBrowserHeadless({SCALA_FACEBOOK_HEADLESS:'1'}),true);
+  assert.throws(()=>cloudBrowserHeadless({SCALA_FACEBOOK_HEADLESS:'false'}),/invalid_cloud_browser_mode/);
+});
 
 const now=Date.parse('2026-10-12T01:00:00Z');
 const cookie=(name,value)=>({name,value,domain:'.facebook.com',path:'/',expires:now/1000+86400,httpOnly:name==='xs',secure:true,sameSite:'Lax'});

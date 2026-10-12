@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseHTML} from 'linkedom';
 import {runInNewContext} from 'node:vm';
-import {isCommentPanelControl,ensureCommentPanel} from '../src/comment-panel.mjs';
+import {isCommentPanelControl,ensureCommentPanel,panelClickReason} from '../src/comment-panel.mjs';
 
 const selectors={identity:'[data-scala]',commentRows:'[data-comment]',replyRows:'[data-reply]'};
 function element(html){return parseHTML('<html><body>'+html+'</body></html>').document.querySelector('[role="button"]');}
@@ -16,11 +16,11 @@ test('solo un control de comentarios fuera de formularios e hilos sirve para abr
     '<div role="button">Publicar comentario</div>'])assert.equal(isCommentPanelControl(element(html),selectors),false);
 });
 
-function fixture({expected=false,editors=0,controls=1,reveal=true}={}){
+function fixture({expected=false,editors=0,controls=1,reveal=true,clickError=null}={}){
   const clicks=[],logs=[];
   const node=element('<div role="button" aria-label="Comentar"></div>');
   const item={isVisible:async()=>true};
-  const button={...item,evaluate:async(fn,arg)=>fn(node,arg),click:async()=>{clicks.push('open');if(reveal)expected=true;}};
+  const button={...item,evaluate:async(fn,arg)=>fn(node,arg),click:async()=>{clicks.push('open');if(clickError)throw clickError;if(reveal)expected=true;}};
   const identity={all:async()=>expected ? [item] : [],waitFor:async()=>{if(!expected)throw Object.assign(new Error('not_visible'),{name:'TimeoutError'});}};
   const page={locator:selector=>selector===selectors.identity ? identity : {all:async()=>Array(editors).fill(item)},
     getByRole:()=>({all:async()=>Array(controls).fill(button)})};
@@ -53,4 +53,18 @@ test('abrir un panel sin encontrar el campo autorizado no permite continuar',asy
 test('el comprobador funciona serializado sin las variables del módulo de Node',()=>{
   const button=element('<div role="button" aria-label="Comentar"></div>');
   assert.equal(runInNewContext('('+isCommentPanelControl.toString()+')(element,selectors)',{element:button,selectors}),true);
+});
+
+test('un botón tapado no se fuerza ni oculta el diagnóstico y no filtra el error de Facebook',async()=>{
+  const error=Object.assign(new Error('element intercepts pointer events; dato privado ficticio'),{name:'TimeoutError'});
+  const f=fixture({clickError:error});await assert.rejects(f.run(),error);
+  assert.equal(f.logs.at(-1).action,'open');assert.equal(f.logs.at(-1).reason,'covered');
+  assert.equal(JSON.stringify(f.logs).includes('dato privado ficticio'),false);
+});
+
+test('las causas de un clic fallido se limitan a categorías sin contenido privado',()=>{
+  assert.equal(panelClickReason({message:'element is outside of the viewport'}),'outside_viewport');
+  assert.equal(panelClickReason({message:'element is not stable'}),'moving');
+  assert.equal(panelClickReason({message:'element is not attached'}),'detached');
+  assert.equal(panelClickReason({message:'otro texto privado',name:'TimeoutError'}),'timeout');
 });
