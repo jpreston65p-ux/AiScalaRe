@@ -25,7 +25,14 @@ export function commentIdentity(href, ownerId) {
 // Only the normal, visible Facebook interface is used. A runtime login must
 // still happen in this program's browser; the ChatGPT session is independent.
 export class FacebookCommentsBrowser {
-  constructor(page, config, catalog=null,stage=()=>{}) { this.page=page;this.config=config;this.catalog=catalog;this.c=config.comments;this.s=this.c.selectors;this.current=null;this.stage=stage; }
+  constructor(page, config, catalog=null,stage=()=>{}) {
+    this.page=page;this.config=config;this.catalog=catalog;this.c=config.comments;
+    // Mention-enabled editors can expose combobox instead of textbox.
+    // The exact owner aria-label and post ownership checks still apply.
+    const editor=value=>value.replaceAll('[role="textbox"]',':is([role="textbox"],[role="combobox"])');
+    this.s={...this.c.selectors,identity:editor(this.c.selectors.identity),postScope:editor(this.c.selectors.postScope)};
+    this.current=null;this.stage=stage;
+  }
   async verifyAccount({navigate=true}={}) {
     await this.checkLogin();
     const currentId=facebookProfileId(this.page.url());
@@ -64,7 +71,7 @@ export class FacebookCommentsBrowser {
     if(fingerprint(postUrl(this.page.url(),this.c.ownerId))!==post.id)throw new Error('post_owner_changed');
     this.stage('esperar_campo_comentar');
     await ensureCommentPanel(this.page,this.s,{stage:this.stage,
-      log:info=>{if(process.env.SCALA_FACEBOOK_CLOUD==='1')console.log('SCALA_CLOUD_INTERFACE: '+JSON.stringify(info));}});
+      pageName:this.config.pageName,log:info=>{if(process.env.SCALA_FACEBOOK_CLOUD==='1')console.log('SCALA_CLOUD_INTERFACE: '+JSON.stringify(info));}});
     await this.guard();
     const owners=this.scope().locator(this.s.postAuthor);
     if (await owners.count() !== 1 || authorId(await owners.getAttribute('href'),this.page.url()) !== this.c.ownerId

@@ -14,11 +14,11 @@ async function visible(locator){
   return result;
 }
 
-export async function ensureCommentPanel(page,selectors,{stage=()=>{},log=()=>{},timeout=45000,discoveryMs=15000}={}){
+export async function ensureCommentPanel(page,selectors,{stage=()=>{},log=()=>{},pageName='Scala Fe',timeout=45000,discoveryMs=15000}={}){
   const started=Date.now(),identity=page.locator(selectors.identity);
   const find=async()=>{
     const expected=await visible(identity);
-    const editors=await visible(page.locator('[contenteditable="true"][role="textbox"],textarea'));
+    const editors=await visible(page.locator('[contenteditable]:not([contenteditable="false"]),textarea'));
     const controls=[];
     for(const button of await visible(page.getByRole('button',{name:names})))
       if(await button.evaluate(isCommentPanelControl,selectors))controls.push(button);
@@ -31,6 +31,13 @@ export async function ensureCommentPanel(page,selectors,{stage=()=>{},log=()=>{}
     await pause(150);
   }while(true);
   if(ui.expected.length)return;
+  const inventory=async()=>page.evaluate(name=>{
+    const visible=element=>{const rect=element.getBoundingClientRect(),style=getComputedStyle(element);return rect.width>0 && rect.height>0 && style.visibility!=='hidden' && style.display!=='none';};
+    return [...document.querySelectorAll('[contenteditable],[role="textbox"],[role="combobox"],textarea,input:not([type="hidden"])')].filter(visible).slice(0,20).map(element=>({
+      tag:element.tagName,role:element.getAttribute('role'),editable:element.getAttribute('contenteditable'),type:element.getAttribute('type'),
+      labelledForScala:element.getAttribute('aria-label')==='Comentar como '+name
+    }));
+  },pageName);
   // Counts only: no editor labels, customer content, URLs or credentials.
   log({expectedComposer:ui.expected.length,visibleEditors:ui.editors.length,commentControls:ui.controls.length});
   if(!ui.editors.length && ui.controls.length===1){
@@ -41,7 +48,7 @@ export async function ensureCommentPanel(page,selectors,{stage=()=>{},log=()=>{}
   stage('esperar_campo_comentar');
   try{await identity.waitFor({state:'visible',timeout:Math.max(1,timeout-(Date.now()-started))});}
   catch(error){
-    ui=await find();log({expectedComposer:ui.expected.length,visibleEditors:ui.editors.length,commentControls:ui.controls.length});
+    ui=await find();log({expectedComposer:ui.expected.length,visibleEditors:ui.editors.length,commentControls:ui.controls.length,editors:page.evaluate ? await inventory() : []});
     throw error;
   }
 }
