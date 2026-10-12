@@ -17,7 +17,7 @@ export class FacebookCommentNotifications {
   constructor(page,config,store) { this.page=page;this.config=config;this.store=store;this.refreshedAt=0;this.initialized=store.meta('facebook-notifications-ready')==='1'; }
   async open() {
     this.stage?.('abrir_avisos');
-    await this.page.goto('https://www.facebook.com/notifications/',{waitUntil:'domcontentloaded',timeout:60000});
+    await this.page.goto('https://www.facebook.com/notifications/',{waitUntil:'commit',timeout:60000});
     this.stage?.('esperar_pantalla_avisos');
     await this.page.getByRole('heading',{name:'Notificaciones',exact:true}).waitFor({state:'visible',timeout:45000});
     this.stage?.('esperar_enlaces_avisos');

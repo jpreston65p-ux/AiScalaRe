@@ -3,6 +3,7 @@ import { fingerprint } from './browser.mjs';
 import { sameText } from './processor.mjs';
 import { readCommentDom, parseSpanishFacebookTime, commentThreadDepth, readPostCaption } from './comment-dom.mjs';
 import { normalize } from './catalog.mjs';
+import {facebookProfileId} from './connection-flow.mjs';
 
 export const postUrl = facebookPostUrl;
 export function authorId(href, base) {
@@ -23,30 +24,25 @@ export function commentIdentity(href, ownerId) {
 // still happen in this program's browser; the ChatGPT session is independent.
 export class FacebookCommentsBrowser {
   constructor(page, config, catalog=null,stage=()=>{}) { this.page=page;this.config=config;this.catalog=catalog;this.c=config.comments;this.s=this.c.selectors;this.current=null;this.stage=stage; }
-  async verifyAccount() {
-    // A manually opened numeric profile plus the composer guard below
-    // verifies the same identity without a redundant /me/ request.
-    const current=new URL(facebookUrl(this.page.url()));
-    const currentId=current.searchParams.get('id') || /(?:^\/p\/[^/]+-|^\/people\/[^/]+\/)(\d+)\/?$/.exec(current.pathname)?.[1];
-    if(currentId===this.c.ownerId && (/^\/profile\.php$/.test(current.pathname) || /^\/(people|p)\//.test(current.pathname))) {
-      this.stage('comprobar_perfil_abierto');
-      await this.checkLogin();
-      return;
-    }
-    this.stage('abrir_perfil');
-    // Facebook can keep its document loading after the profile redirect.
-    // Wait for navigation and the actual redirected identity instead.
-    await this.page.goto('https://www.facebook.com/me/', {waitUntil:'commit',timeout:60000});
-    this.stage('esperar_identidad_perfil');
-    await this.page.waitForURL(url=>url.hostname==='www.facebook.com' && !/^\/me\/?$/.test(url.pathname), {waitUntil:'commit',timeout:60000});
+  async verifyAccount({navigate=true}={}) {
     await this.checkLogin();
-    const url=new URL(facebookUrl(this.page.url()));
-    const numeric=url.searchParams.get('id') || /(?:^\/p\/[^/]+-|^\/people\/[^/]+\/)(\d+)\/?$/.exec(url.pathname)?.[1];
-    if (numeric !== this.c.ownerId) throw new Error('page_identity_changed');
+    const currentId=facebookProfileId(this.page.url());
+    if(currentId===this.c.ownerId){this.stage('comprobar_perfil_abierto');return;}
+    if(!navigate)throw new Error(currentId ? 'page_identity_changed' : 'profile_not_open');
+    this.stage('abrir_perfil');
+    await this.page.goto('https://www.facebook.com/me/',{waitUntil:'commit',timeout:60000});
+    this.stage('esperar_identidad_perfil');
+    await this.page.waitForURL(url=>url.hostname==='www.facebook.com' && !/^\/me\/?$/.test(url.pathname),{waitUntil:'commit',timeout:60000});
+    await this.checkLogin();
+    if(facebookProfileId(this.page.url())!==this.c.ownerId)throw new Error('page_identity_changed');
   }
   async checkLogin() {
-    facebookUrl(this.page.url());
-    if (await this.page.locator('input[name="email"], input[name="pass"]').count()) throw new Error('sign_in_required');
+    if(this.page.isClosed())throw new Error('browser_closed');
+    // A newly created application page may still be about:blank before goto.
+    if(this.page.url()==='about:blank')return;
+    const url=new URL(facebookUrl(this.page.url()));
+    if(/^\/(checkpoint|two_step_verification|authentication)(\/|$)/.test(url.pathname))throw new Error('facebook_verification_required');
+    if(/^\/(login|recover)(\/|\.php|$)/.test(url.pathname) || await this.page.locator('input[name="email"], input[name="pass"]').count())throw new Error('sign_in_required');
   }
   scope() { return this.page.locator(this.s.postScope); }
   async guard() {
@@ -61,7 +57,7 @@ export class FacebookCommentsBrowser {
     let matches=false;
     try { matches=this.current?.id===post.id && this.current?.commentId===post.commentId && fingerprint(postUrl(this.page.url(),this.c.ownerId))===post.id; } catch {}
     this.stage('abrir_publicacion');
-    if (!matches) await this.page.goto(post.sourceUrl || post.url,{waitUntil:'domcontentloaded',timeout:60000});
+    if (!matches) await this.page.goto(post.sourceUrl || post.url,{waitUntil:'commit',timeout:60000});
     this.stage('esperar_campo_comentar');
     await this.page.locator(this.s.identity).waitFor({state:'visible',timeout:45000});
     await this.guard();

@@ -17,10 +17,14 @@ bash "$(xdg-user-dir DOWNLOAD)/INSTALAR_SCALA_FACEBOOK_NUBE.sh"
 El instalador crea `SCALA_FACEBOOK_NUBE` en tu carpeta de Descargas, descarga el código público de la rama `scala-facebook-comentarios-cloud` de AiScalaRe e instala dependencias oficiales. Usa Node.js 24; puede reutilizar el instalado para SCALA WhatsApp. No sobrescribe tu catálogo ni configuración si ya existen en esa carpeta.
 
 1. En la ventana propia de Firefox, inicia sesión en Facebook y selecciona **Scala Fe**.
-2. Pulsa Enter en la terminal cuando se vea la cuenta correcta.
+2. Abre su perfil (`https://www.facebook.com/profile.php?id=61576458508649`) y pulsa Enter en la terminal cuando se vea la cuenta correcta.
 3. Si falta acceso a Railway en esa PC, completa el formulario de Railway que abre su herramienta oficial.
 
 El programa verifica cuenta, publicación propia y avisos antes de enviar su sesión al servicio `scala-facebook-comentarios`. El servidor vuelve a verificar identidad y controles antes de publicar. Si Facebook solicita otra verificación o cambia su interfaz, los envíos se detienen y debe revisarse la conexión.
+
+La conexión de escritorio no navega a `/me/`. Conserva la pestaña del perfil mientras revisa publicaciones y avisos en pestañas propias. Si falla una comprobación, la ventana sigue abierta y puedes corregir la pantalla y pulsar Enter para reintentar. `SALIR` o Ctrl+C cancelan. Una ventana cerrada puede reabrirse en el siguiente intento, conservando su perfil privado.
+
+Los registros `SCALA_ETAPA_FALLIDA`, `SCALA_ERROR_CONEXION` y `SCALA_PANTALLA` se guardan también en `data/comments/diagnostico-conexion.txt` (o en el directorio privado configurado). Solo contienen categorías y códigos, nunca direcciones visitadas, datos del cliente ni credenciales. `SCALA_CONEXION_COMPLETADA` indica que la sesión se envió y la configuración se guardó; después se cierra el navegador de conexión de forma anunciada. Aún falta la verificación del servidor.
 
 **No escribas contraseñas, códigos ni sesiones en el chat.** Solo se obtiene la sesión del navegador propio de este programa; nunca se lee ni se exporta el navegador de ChatGPT. Se envía por la entrada privada de la herramienta oficial de Railway, al proyecto, entorno y servicio específicos. No se incluye en enlaces, argumentos de comandos, archivos públicos ni consola.
 
@@ -34,6 +38,8 @@ Para reconectar una carpeta preparada:
 cd "$(xdg-user-dir DOWNLOAD)/SCALA_FACEBOOK_NUBE"
 bash CONECTAR_SCALA_FACEBOOK.sh --nube
 ```
+
+`ACTUALIZAR_SCALA_FACEBOOK.sh` descarga y comprueba el conjunto completo de módulos fuente antes de copiarlos. Conserva sesiones, base, dependencias, catálogo y configuración. Se puede indicar una revisión completa de GitHub como argumento para actualizar a una versión concreta.
 
 ## Publicaciones antiguas y nuevas
 
@@ -49,11 +55,18 @@ bash CONECTAR_SCALA_FACEBOOK.sh --nube
 
 ## Mensajes
 
-Cabecera decorada, párrafos breves y como máximo dos emojis. Un comentario general recibe un agradecimiento cálido. Las consultas usan únicamente datos confirmados.
+La respuesta pública identifica al asistente virtual y dirige al WhatsApp de SCALA, sin añadir precios, catálogo o promesas de compra:
+
+> ¡Hola! 😊 Soy el asistente virtual de SCALA.
+>
+> Si quieres saber más sobre el producto, escríbenos por WhatsApp 💙.
+
+
+El contacto de fábrica está sin configurar: el mensaje no incluye números ni enlaces inferidos. Se puede añadir un contacto expresamente autorizado con `whatsapp.number` y `whatsapp.url` en el catálogo. Se valida el dominio `wa.me` y la coincidencia de ambos números. Los comentarios del visitante nunca cambian este contacto. `BAJA` conserva la opción de pausar las respuestas de ese autor.
 
 Producto: **Gedeón, el valiente obediente**, cuento digital PDF basado en Jueces 6 y 7 para conversar sobre valentía, fe y obediencia. Precio y moneda, pagos, horario y descarga siguen sin configurar. No se inventan descuentos, edades, páginas ni materiales.
 
-El producto se identifica por su mención, asociación configurada o título confirmado en la publicación. Otros comentarios no configuran productos. Si falta contexto, se pide una sola aclaración. Pagos particulares, comprobantes y entregas se orientan a privado sin afirmar acciones no realizadas.
+Las preguntas de compra se atienden por WhatsApp; los comentarios públicos no confirman pagos ni envíos y no muestran datos privados. El servicio existente de WhatsApp no se modifica en esta actualización.
 
 ## Railway
 
@@ -72,6 +85,6 @@ npm test
 bash PROBAR_COMENTARIOS.sh
 ```
 
-53 pruebas aprobadas: 29 comentarios, 6 nube/aislamiento y 18 del chat anterior. Los transportes son simulados; la demo no publica. Una prueba del navegador no equivale a una prueba real del bot autenticado.
+61 pruebas aprobadas: 29 comentarios, 8 conexión/reintentos, 6 nube/aislamiento y 18 del chat anterior. Los transportes son simulados; la demo no publica. Una prueba del navegador no equivale a una prueba real del bot autenticado.
 
 La fuente pública excluye sesiones, perfiles, bases privadas, claves y dependencias instaladas. Conserva `verifiedPage=false` y `allowSending=false`; las comprobaciones reales y la vinculación son necesarias para habilitar envíos.

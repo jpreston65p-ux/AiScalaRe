@@ -3,6 +3,7 @@ import { validateHours, hoursStatus } from './hours.mjs';
 
 export const defaultCatalog = {
   brand: 'SCALA', website: 'https://vitacala.online/', slogan: 'SCALA, para una vida edificada.',
+  whatsapp: null,
   products: [{
     id: 'gedeon', title: 'Gedeón, el valiente obediente', category: 'books',
     format: 'Cuento digital PDF',
@@ -18,6 +19,16 @@ export function confirmedUrl(value) {
   if (value == null || typeof value === 'string' && (!value.trim() || hasPlaceholder(value))) return null;
   try { const u = new URL(value); if (u.protocol === 'https:' && !u.username && !u.password) return u.href; } catch {}
   throw new Error('invalid_catalog');
+}
+export function confirmedWhatsapp(value) {
+  if(value==null || hasPlaceholder(value?.number) || hasPlaceholder(value?.url))return null;
+  const number=confirmedText(value.number,30);
+  const url=confirmedUrl(value.url),digits=number.replace(/\D/g,'');
+  if(!/^\+?[\d ()-]{5,30}$/.test(number) || digits.length<5 || digits.length>15 || !url)throw new Error('invalid_catalog');
+  const parsed=new URL(url),international=parsed.pathname.slice(1);
+  if(parsed.hostname!=='wa.me' || parsed.port || parsed.search || parsed.hash
+    || !/^[1-9]\d{4,14}$/.test(international) || !international.endsWith(digits))throw new Error('invalid_catalog');
+  return {number,url:parsed.href};
 }
 export function catalogFor(env = {}) {
   let source = defaultCatalog;
@@ -42,6 +53,7 @@ export function catalogFor(env = {}) {
       price, url: confirmedUrl(p.url), delivery: /https?:\/\//i.test(delivery) ? null : delivery || null };
   });
   return { brand: 'SCALA', slogan: defaultCatalog.slogan, website: confirmedUrl(source.website || defaultCatalog.website), products,
+    whatsapp: confirmedWhatsapp(source.whatsapp===undefined ? defaultCatalog.whatsapp : source.whatsapp),
     paymentInstructions: confirmedText(source.paymentInstructions, 440) || null,
     paymentMethods: Array.isArray(source.paymentMethods) ? source.paymentMethods.map(m => confirmedText(m, 80)).filter(Boolean).slice(0, 8) : [],
     paymentDetails: confirmedText(source.paymentDetails, 600) || null, attentionHours: validateHours(source.attentionHours) };

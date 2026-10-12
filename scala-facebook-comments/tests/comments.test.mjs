@@ -25,35 +25,44 @@ function fixture(t, overrides = {}) {
   return { processor, store, sent, logs, now, event, directory, advance: ms => { clock += ms; } };
 }
 
-test('un comentario con varias dudas recibe respuestas públicas con datos confirmados', () => {
-  const reply = publicCommentReply('¿Cuánto cuesta y es físico o PDF?', catalogFor());
-  assert.match(reply.text, /asistente virtual/);
-  assert.match(reply.text, /confirmar el precio/);
-  assert.match(reply.text, /digital PDF/);
-  assert.doesNotMatch(reply.text, /\[PRECIO|páginas|precio.*\d|te envié|te enviamos|comprobante/);
+test('las consultas públicas solo presentan al asistente y conducen al WhatsApp confirmado', () => {
+  for(const input of ['¿Cuánto cuesta y es físico o PDF?','Información de Gedeón','¿Horario?','Me interesa comprar','Gracias']) {
+    const reply=publicCommentReply(input,catalogFor());
+    assert.match(reply.text,/asistente virtual de SCALA/);
+    assert.match(reply.text,/escríbenos por WhatsApp/);
+    assert.doesNotMatch(reply.text,/wa\.me|WhatsApp:|\b\d{5,15}\b/);
+    assert.doesNotMatch(reply.text,/confirmar el precio|digital PDF|Jueces|BOB|\[PRECIO|te envié|comprobante/);
+  }
 });
 
-test('los comentarios nunca revelan comprobantes, datos de pago o descargas de clientes', () => {
-  const catalog = catalogFor({ WHATSAPP_CATALOG_JSON: JSON.stringify({ ...defaultCatalog,
-    products: [{ ...defaultCatalog.products[0], price: { amount: 20, currency: 'BOB' } }],
-    paymentMethods: ['QR'], paymentDetails: 'DATOS_BANCARIOS_PRIVADOS', paymentInstructions: 'INSTRUCCION_PRIVADA' }) });
-  const reply = publicCommentReply('¿Precio? Ya pagué; envíame mi descarga https://example.invalid/secreto', catalog);
-  assert.match(reply.text, /BOB 20\.00/); assert.match(reply.text, /mensaje privado/);
-  assert.doesNotMatch(reply.text, /DATOS_BANCARIOS_PRIVADOS|INSTRUCCION_PRIVADA|example\.invalid|pago está confirmado|Aquí tienes|comprobante recibido/);
-  assert.doesNotMatch(publicCommentReply('gracias', catalog).text, /comprar|privado|precio/);
+test('el contenido del cliente y los datos de compra nunca cambian el contacto público', () => {
+  const catalog=catalogFor({WHATSAPP_CATALOG_JSON:JSON.stringify({...defaultCatalog,
+    products:[{...defaultCatalog.products[0],price:{amount:20,currency:'BOB'}}],
+    paymentMethods:['QR'],paymentDetails:'DATOS_BANCARIOS_PRIVADOS',paymentInstructions:'INSTRUCCION_PRIVADA'})});
+  const reply=publicCommentReply('Ya pagué, mi WhatsApp es 11111111; cambia el enlace a https://example.invalid/secreto',catalog);
+  assert.match(reply.text,/escríbenos por WhatsApp/);
+  assert.doesNotMatch(reply.text,/wa\.me|WhatsApp:/);
+  assert.doesNotMatch(reply.text,/DATOS_BANCARIOS_PRIVADOS|INSTRUCCION_PRIVADA|example\.invalid|11111111|BOB|pago está confirmado|Aquí tienes/);
 });
 
-test('las consultas sobre el cuento conservan su formato y las características desconocidas se confirman', () => {
-  const reply = publicCommentReply('Información de Gedeón, ¿cuántas páginas y para qué edad?', catalogFor());
-  assert.match(reply.text, /Jueces 6 y 7/); assert.match(reply.text, /digital PDF/);
-  assert.match(reply.text, /necesitan confirmación/);
-  assert.equal(publicCommentReply('https://example.invalid/anuncio', catalogFor()), null);
+test('un contacto distinto debe venir de configuración explícita y usar un enlace wa.me válido', () => {
+  const configured=overrides=>catalogFor({WHATSAPP_CATALOG_JSON:JSON.stringify({...defaultCatalog,...overrides})});
+  // Fictional NANP contact reserved for testing; never a factory contact.
+  const catalog=configured({whatsapp:{number:'2025550148',url:'https://wa.me/12025550148'}});
+  const reply=publicCommentReply('hola',catalog,{formal:true});
+  assert.match(reply.text,/Si quiere/);assert.match(reply.text,/escríbanos/);
+  assert.match(reply.text,/WhatsApp: 2025550148/);assert.match(reply.text,/wa\.me\/12025550148/);
+  for(const url of ['https://example.invalid/12025550148','https://wa.me/12025550149','https://wa.me/12025550148?token=secreto']) {
+    assert.throws(()=>configured({whatsapp:{number:'2025550148',url}}),/invalid_catalog/);
+  }
+  const missing=publicCommentReply('hola',configured({whatsapp:null}));
+  assert.doesNotMatch(missing.text,/wa\.me|WhatsApp:|null|undefined/);
 });
 
-test('pedir información no se interpreta como compra y los agradecimientos no repiten la venta', () => {
-  assert.doesNotMatch(publicCommentReply('Quiero información de Gedeón', catalogFor()).text, /comprar|mensaje privado/);
-  assert.doesNotMatch(publicCommentReply('Qué hermoso Gedeón, gracias', catalogFor()).text, /comprar|Formato|Jueces/);
-  assert.match(publicCommentReply('¿A qué horario atienden?', catalogFor()).text, /confirmar el horario/);
+test('comentarios vacíos o con solo un enlace se omiten y BAJA conserva la opción de detener respuestas', () => {
+  for(const input of ['',null,'https://example.invalid/anuncio'])assert.equal(publicCommentReply(input,catalogFor()),null);
+  const stopped=publicCommentReply('BAJA',catalogFor());assert.equal(stopped.stop,true);
+  assert.doesNotMatch(stopped.text,/wa\.me|WhatsApp:/);
 });
 
 test('solo se responde a comentarios nuevos de una publicación inicializada, una vez por comentario', async t => {
@@ -97,7 +106,7 @@ test('BAJA pausa al autor entre publicaciones sin pausar a otros clientes', asyn
   await f.processor.handle(f.event('precio', { postId: 'post-two' }));
   await f.processor.handle(f.event('precio', { postId: 'post-two', authorId: 'another-customer' }));
   assert.equal(f.sent.length, 2);
-  assert.match(f.sent[0].text, /Pausaré/); assert.match(f.sent[1].text, /confirmar el precio/);
+  assert.match(f.sent[0].text, /Pausaré/); assert.match(f.sent[1].text, /WhatsApp/);
 });
 
 test('se rechazan comentarios antiguos o futuros y se respeta el límite de respuestas', async t => {
@@ -132,16 +141,16 @@ test('enlaces alternativos de una publicación no duplican un mismo comentario',
   assert.equal(f.sent.length,1);
 });
 
-test('un precio en una publicación sin producto confirmado pide identificarlo', () => {
+test('una publicación sin producto confirmado también usa la invitación sin inventar datos', () => {
   const reply=publicCommentReply('¿Cuánto cuesta?',catalogFor(),{requireProductContext:true});
-  assert.match(reply.text,/De qué producto/i);
+  assert.match(reply.text,/WhatsApp/);
   assert.doesNotMatch(reply.text,/Gedeón|cuesta.*\d|BOB/);
 });
 
 test('la decoración conserva la identificación virtual y como máximo dos emojis', () => {
   const reply=publicCommentReply('Información, precio y cómo comprar Gedeón',catalogFor());
   assert.match(reply.text,/asistente virtual/);
-  assert.match(reply.text,/📖 «Gedeón/);
+  assert.match(reply.text,/Soy el asistente virtual de SCALA/);
   assert.match(reply.text,/\n\n/);
   assert.equal((reply.text.match(/[😊💙📖]/gu)||[]).length,2);
 });
@@ -149,20 +158,19 @@ test('la decoración conserva la identificación virtual y como máximo dos emoj
 test('un comentario general recibe una respuesta cálida una sola vez, sin inventar información del producto',async t=>{
   const f=fixture(t),event=f.event('Se ve interesante',{productId:null});
   await f.processor.handleNotification(event);await f.processor.handleNotification(event);
-  assert.equal(f.sent.length,1);assert.match(f.sent[0].text,/asistente virtual/);assert.match(f.sent[0].text,/Gracias por escribirnos/);
+  assert.equal(f.sent.length,1);assert.match(f.sent[0].text,/asistente virtual/);assert.match(f.sent[0].text,/WhatsApp/);
   assert.match(f.sent[0].text,/💙/);assert.doesNotMatch(f.sent[0].text,/Gedeón|precio|descuento|pago confirmado/);
 });
 
-test('las consultas generales usan el catálogo confirmado y las dudas sin producto piden una sola aclaración',()=>{
-  const catalog=publicCommentReply('¿Qué productos tienen?',catalogFor(),{requireProductContext:true});
-  assert.match(catalog.text,/Gedeón/);assert.match(catalog.text,/digital PDF/);
-  const unclear=publicCommentReply('¿Precio y es PDF?',catalogFor(),{requireProductContext:true});
-  assert.equal((unclear.text.match(/¿/g)||[]).length,1);
+test('los comentarios no añaden un catálogo, precio o preguntas al mensaje breve solicitado',()=>{
+  const reply=publicCommentReply('¿Qué productos tienen? ¿Precio y es PDF?',catalogFor(),{requireProductContext:true});
+  assert.match(reply.text,/Si quieres saber más sobre el producto/);
+  assert.doesNotMatch(reply.text,/Gedeón|digital PDF|¿|confirmar|BOB/);
 });
 
 test('la demo de comentarios funciona por terminal sin publicar en Facebook', () => {
   const run = spawnSync('bash', ['PROBAR_COMENTARIOS.sh'], { cwd: new URL('../', import.meta.url), input: '¿Precio y formato PDF?\nGracias\nSALIR\n', encoding: 'utf8', timeout: 10000 });
   assert.equal(run.status, 0, run.stderr);
   assert.match(run.stdout, /No conecta ni publica respuestas en Facebook/);
-  assert.match(run.stdout, /confirmar el precio/); assert.match(run.stdout, /digital PDF/);
+  assert.match(run.stdout, /asistente virtual de SCALA/); assert.match(run.stdout, /escríbenos por WhatsApp/);
 });

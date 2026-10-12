@@ -1,88 +1,116 @@
-import { mkdirSync, chmodSync, writeFileSync, renameSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { createInterface } from 'node:readline/promises';
-import { randomBytes } from 'node:crypto';
-import { loadConfig, validateConfig, root, facebookPostUrl } from './config.mjs';
-import { fingerprint } from './browser.mjs';
-import { FacebookCommentsBrowser } from './comment-browser.mjs';
-import { Store } from './store.mjs';
+import {mkdirSync,chmodSync,writeFileSync,renameSync} from 'node:fs';
+import {join,resolve} from 'node:path';
+import {createInterface} from 'node:readline/promises';
+import {randomBytes} from 'node:crypto';
+import {loadConfig,validateConfig,root,facebookPostUrl} from './config.mjs';
+import {fingerprint} from './browser.mjs';
+import {FacebookCommentsBrowser} from './comment-browser.mjs';
+import {FacebookCommentNotifications} from './comment-notifications.mjs';
+import {Store} from './store.mjs';
 import {launchCommentsContext,commentsBrowserName} from './browser-runtime.mjs';
 import {cloudTarget,encodeSessionPacket} from './cloud-session.mjs';
 import {uploadSession} from './cloud-upload.mjs';
+import {facebookProfileId,connectionErrorInfo,connectionPageState,waitForConnection} from './connection-flow.mjs';
 
 process.umask(0o077);
-let context,terminal,store,lease,renew;
-let stage='inicio';
+let context,terminal,store,lease,renew,profilePage,workPage,noticesPage,diagnosticPath;
+let stage='inicio',browserClosed=true,closing=false,ownerId;
+const cancel=new AbortController();
+const interrupt=()=>{
+  cancel.abort();closing=true;
+  if(context)void context.close().catch(()=>{});
+};
+process.once('SIGINT',interrupt);
+process.once('SIGTERM',interrupt);
 const progress=value=>{stage=value;console.log('SCALA_PASO_CONEXION: '+value);};
+const reportError=error=>{
+  const original=connectionErrorInfo(error);
+  const info=browserClosed && context && ['error_no_clasificado','tiempo_de_espera_agotado'].includes(original.code)
+    ? connectionErrorInfo(new Error('browser_closed')) : original;
+  const page=stage.includes('avisos') ? noticesPage : ['comprobar_perfil_abierto','esperar_perfil_manual','abrir_facebook'].includes(stage) ? profilePage : workPage || profilePage;
+  const lines=['SCALA_ETAPA_FALLIDA: '+stage,'SCALA_ERROR_CONEXION: '+info.code,'SCALA_PANTALLA: '+connectionPageState(page,ownerId)];
+  console.log(info.message);console.log(lines.join('\n'));
+  if(diagnosticPath){try{writeFileSync(diagnosticPath,lines.join('\n')+'\n',{mode:0o600});}catch{}}
+};
 try {
   const args=process.argv.slice(2),cloud=args.includes('--nube');
   if(args.some(value=>value!=='--nube'))throw new Error('invalid_arguments');
   if(cloud)process.env.SCALA_FACEBOOK_BROWSER='firefox';
-  if (!process.stdin.isTTY || !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) throw new Error('desktop_required');
+  if(!process.stdin.isTTY || !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY)throw new Error('desktop_required');
   const loaded=loadConfig({live:false});
   const config=validateConfig({...loaded.config,verifiedPage:true,allowSending:true});
-  if (config.mode !== 'comments') throw new Error('comments_not_selected');
-  if(cloud && config.comments.ownerId!==cloudTarget.owner)throw new Error('page_identity_changed');
+  if(config.mode!=='comments')throw new Error('comments_not_selected');
+  ownerId=config.comments.ownerId;
+  if(cloud && ownerId!==cloudTarget.owner)throw new Error('page_identity_changed');
   const privateDir=join(loaded.dataDir,'comments'),profile=join(privateDir,'browser-'+commentsBrowserName());
   mkdirSync(profile,{recursive:true,mode:0o700});chmodSync(privateDir,0o700);chmodSync(profile,0o700);
+  diagnosticPath=join(privateDir,'diagnostico-conexion.txt');
   store=new Store(privateDir);lease=randomBytes(16).toString('hex');store.acquireRunner(lease);
-  renew=setInterval(()=>{try{store.renewRunner(lease);}catch{terminal?.close();void context?.close();}},5000);
-  context=await launchCommentsContext(profile,config,{headless:false});
-  const page=context.pages()[0] || await context.newPage();
-  await page.goto('https://www.facebook.com/',{waitUntil:'domcontentloaded',timeout:30000});
-  console.log('Inicia sesión en la ventana de Facebook y selecciona Scala Fe. Este paso no publica comentarios.');
-  console.log('No escribas tu contraseña ni códigos en la terminal o en el chat.');
+  renew=setInterval(()=>{try{store.renewRunner(lease);}catch{interrupt();}},5000);
   terminal=createInterface({input:process.stdin,output:process.stdout});
-  await terminal.question('Cuando veas Scala Fe en el navegador, pulsa Enter para comprobar la conexión: ');
-  const profilePage=context.pages().find(candidate=>{
-    try {const url=new URL(candidate.url());return url.hostname==='www.facebook.com' && url.pathname==='/profile.php' && url.searchParams.get('id')===config.comments.ownerId;} catch{return false;}
-  }) || page;
-  const connector=new FacebookCommentsBrowser(profilePage,config,loaded.catalog,progress);
-  await connector.verifyAccount();
-  for (const value of config.comments.postUrls) {
-    const url=facebookPostUrl(value,config.comments.ownerId);
-    await connector.open({id:fingerprint(url),url,sourceUrl:value===config.comments.postUrls[0]?config.comments.verificationUrl:undefined});
-    progress('leer_comentarios');
-    await connector.comments();
-  }
-  const {FacebookCommentNotifications}=await import('./comment-notifications.mjs');
-  const notifications=new FacebookCommentNotifications(await context.newPage(),config,store);
-  notifications.stage=progress;
-  await notifications.open();
-  // Do not baseline events here: activation starts with the runner, not login.
-  if(cloud){
-    progress('enviar_sesion_a_railway');
-    console.log('Cuenta y controles comprobados. Se conectará esta sesión propia del programa al servicio scala-facebook-comentarios de Railway.');
-    const encoded=encodeSessionPacket({version:1,browser:'firefox',ownerId:config.comments.ownerId,createdAt:Date.now(),cookies:await context.cookies('https://www.facebook.com/')},config.comments.ownerId);
-    uploadSession(encoded);
-  }
-  const target=resolve(root,'facebook.config.json'),temporary=target+'.tmp';
-  writeFileSync(temporary,JSON.stringify(config,null,2)+'\n',{mode:0o600});renameSync(temporary,target);
-  console.log(cloud?'Sesión enviada a Railway. El servicio comprobará el acceso antes de habilitar respuestas. No necesitas dejar abierta esta terminal.':'Sesión del programa y controles comprobados. Inicia con: bash INICIAR_SCALA_FACEBOOK.sh');
-  console.log('Una respuesta automática todavía debe verificarse al recibir un comentario nuevo.');
+  terminal.on('SIGINT',interrupt);
+  const profileUrl='https://www.facebook.com/profile.php?id='+ownerId;
+  const completed=await waitForConnection({
+    prepare:async()=>{
+      if(context && !browserClosed)return;
+      progress('iniciar_firefox');
+      context=await launchCommentsContext(profile,config,{headless:false});
+      browserClosed=false;workPage=null;noticesPage=null;
+      context.on('close',()=>{
+        browserClosed=true;
+        if(!closing)console.log('SCALA_NAVEGADOR_CERRADO: Firefox se cerró. Pulsa Enter para abrirlo de nuevo; SALIR para terminar.');
+      });
+      profilePage=context.pages()[0] || await context.newPage();
+      progress('abrir_facebook');
+      try{await profilePage.goto(profileUrl,{waitUntil:'commit',timeout:60000});}catch(error){reportError(error);}
+      console.log('Inicia sesión en este Firefox y selecciona Scala Fe. La comprobación no publica comentarios.');
+      console.log('Si no estás en su perfil, abre: '+profileUrl);
+      console.log('No escribas contraseñas ni códigos en la terminal o en el chat.');
+    },
+    question:prompt=>terminal.question(prompt,{signal:cancel.signal}),
+    check:async()=>{
+      cancel.signal.throwIfAborted();
+      if(browserClosed)throw new Error('browser_closed');
+      progress('esperar_perfil_manual');
+      profilePage=context.pages().find(page=>!page.isClosed() && facebookProfileId(page.url())===ownerId)
+        || (!profilePage?.isClosed() ? profilePage : context.pages().find(page=>!page.isClosed()));
+      if(!profilePage)throw new Error('browser_closed');
+      await new FacebookCommentsBrowser(profilePage,config,loaded.catalog,progress).verifyAccount({navigate:false});
+      // Keep the login/profile tab available, even if a later check fails.
+      if(!workPage || workPage.isClosed())workPage=await context.newPage();
+      const connector=new FacebookCommentsBrowser(workPage,config,loaded.catalog,progress);
+      for(const value of config.comments.postUrls){
+        const url=facebookPostUrl(value,ownerId);
+        await connector.open({id:fingerprint(url),url,sourceUrl:value===config.comments.postUrls[0]?config.comments.verificationUrl:undefined});
+        progress('leer_comentarios');await connector.comments();
+      }
+      if(!noticesPage || noticesPage.isClosed())noticesPage=await context.newPage();
+      const notifications=new FacebookCommentNotifications(noticesPage,config,store);
+      notifications.stage=progress;await notifications.open();
+      // Activation, rather than the login wizard, initializes the baseline.
+      if(cloud){
+        cancel.signal.throwIfAborted();
+        progress('enviar_sesion_a_railway');
+        console.log('Cuenta y controles comprobados. Se vinculará esta sesión propia al servicio de comentarios de Railway.');
+        const encoded=encodeSessionPacket({version:1,browser:'firefox',ownerId,createdAt:Date.now(),cookies:await context.cookies('https://www.facebook.com/')},ownerId);
+        uploadSession(encoded);
+      }
+    },
+    onError:reportError
+  });
+  if(completed){
+    cancel.signal.throwIfAborted();
+    const target=resolve(root,'facebook.config.json'),temporary=target+'.tmp';
+    writeFileSync(temporary,JSON.stringify(config,null,2)+'\n',{mode:0o600});renameSync(temporary,target);
+    console.log('SCALA_CONEXION_COMPLETADA');
+    console.log(cloud ? 'Sesión enviada a Railway. La nube comprobará el acceso antes de habilitar respuestas. El Firefox de conexión se cerrará ahora; no necesitas mantener esta terminal abierta.' : 'Sesión del programa y controles comprobados. Inicia con: bash INICIAR_SCALA_FACEBOOK.sh');
+    console.log('Todavía hace falta verificar una respuesta automática a un comentario nuevo.');
+  }else console.log('Conexión cancelada por ti. Se cerrará Firefox.');
 }catch(error){
-  const messages={desktop_required:'La conexión inicial necesita la terminal y el escritorio de Linux Mint.',
-    invalid_arguments:'Para conectar la nube usa: bash CONECTAR_SCALA_FACEBOOK.sh --nube',
-    invalid_cloud_session:'No se pudo preparar una sesión propia válida para la nube. No se enviaron credenciales.',
-    railway_login_required:'Falta completar el inicio de sesión autorizado en Railway.',
-    cloud_upload_failed:'Railway no aceptó la sesión para el servicio de Facebook. Comprueba que abriste la cuenta donde está SCALA.',
-    firefox_content_sandbox_unverified:'No se pudo verificar el aislamiento de Firefox en este equipo. La conexión no se activó.',
-    sandbox_disabled_by_environment:'Una variable del equipo desactiva el aislamiento de Firefox. La conexión no se activó.',
-    already_running:'Detén el proceso del bot antes de conectar esta sesión.',
-    sign_in_required:'Falta iniciar sesión en la ventana de Facebook.',
-    page_identity_changed:'La cuenta abierta no coincide con Scala Fe. No se activaron envíos.',
-    post_owner_changed:'No se pudo verificar la publicación de Scala Fe.',
-    selectors_not_calibrated:'Facebook muestra controles distintos a los verificados. No se activaron envíos.'};
-  const details={notification_view_changed:'No se pudo verificar la pantalla de avisos.',unreliable_timestamp:'Facebook mostró una fecha distinta del formato esperado.',comment_identity_unknown:'No se pudo identificar el enlace del comentario.',comment_author_unknown:'No se pudo verificar el autor del comentario.',replies_not_loaded:'Facebook no terminó de cargar las respuestas.',non_root_linux_required:'Ejecuta la conexión como farm, sin sudo.'};
-  console.log(messages[error.message] || details[error.message] || 'No se completó la conexión. La configuración de envíos no se modificó.');
-  // Only known codes or the exception class, never raw browser errors/URLs,
-  // cookies, usernames, credentials or session values.
-  const known=[...Object.keys(messages),...Object.keys(details)];
-  console.log('SCALA_ETAPA_FALLIDA: '+stage);
-  console.log('SCALA_ERROR_CONEXION: '+(known.includes(error.message)?error.message:({TimeoutError:'tiempo_de_espera_agotado',TypeError:'tipo_de_dato_inesperado',Error:'error_no_clasificado'}[error.name] || 'error_no_clasificado')));
-  process.exitCode=78;
+  if(cancel.signal.aborted)console.log('Conexión cancelada. Puedes volver a abrirla cuando quieras.');
+  else {reportError(error);process.exitCode=78;}
 }finally{
-  clearInterval(renew);terminal?.close();
+  closing=true;clearInterval(renew);process.removeListener('SIGINT',interrupt);process.removeListener('SIGTERM',interrupt);terminal?.close();
   if(context){try{await context.close();}catch{}}
   if(store){try{store.releaseRunner(lease);}catch{}store.close();}
 }

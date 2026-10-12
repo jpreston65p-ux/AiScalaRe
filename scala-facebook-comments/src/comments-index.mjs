@@ -6,9 +6,12 @@ import { Store } from './store.mjs';
 import { FacebookCommentProcessor } from './comment-processor.mjs';
 import {launchCommentsContext,commentsBrowserName} from './browser-runtime.mjs';
 import {decodeSessionPacket,sessionDigest,cloudTarget} from './cloud-session.mjs';
+import {connectionErrorInfo,connectionPageState} from './connection-flow.mjs';
 
 process.umask(0o077);
-let context,store,lease,renew,processor,stopping=false;
+let context,store,lease,renew,processor,activePage,ownerId,stopping=false;
+let stage='inicio',starting=true;
+const progress=value=>{stage=value;if(starting && process.env.SCALA_FACEBOOK_CLOUD==='1')console.log('SCALA_CLOUD_STEP: '+value);};
 process.once('SIGINT',()=>{stopping=true;});
 process.once('SIGTERM',()=>{stopping=true;});
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -18,6 +21,7 @@ try {
   const cloud=process.env.SCALA_FACEBOOK_CLOUD==='1';
   if(cloud && (!encoded || encoded.length>87384 || commentsBrowserName()!=='firefox'))throw new Error('invalid_cloud_session');
   const config=validateConfig(cloud?{...loaded.config,verifiedPage:true,allowSending:true}:loaded.config),{catalog,dataDir}=loaded;
+  ownerId=config.comments?.ownerId;
   if (config.mode !== 'comments') throw new Error('comments_not_selected');
   const privateDir=join(dataDir,'comments');
   mkdirSync(privateDir,{recursive:true,mode:0o700});chmodSync(privateDir,0o700);
@@ -29,6 +33,7 @@ try {
   mkdirSync(profile,{recursive:true,mode:0o700});chmodSync(profile,0o700);
   const digest=cloud?sessionDigest(encoded):null;
   let session=cloud && store.meta('facebook-cloud-session-digest')!==digest?decodeSessionPacket(encoded,config.comments.ownerId):null;
+  progress('iniciar_firefox');
   context=await launchCommentsContext(profile,config,{headless:process.env.SCALA_FACEBOOK_HEADLESS==='1'});
   if(cloud && !session){
     const cookies=await context.cookies('https://www.facebook.com/');
@@ -36,14 +41,16 @@ try {
   }
   if(session){await context.clearCookies();await context.addCookies(session.cookies);}
   const page=context.pages()[0] || await context.newPage();
-  const connector=new FacebookCommentsBrowser(page,config,catalog);
+  activePage=page;
+  const connector=new FacebookCommentsBrowser(page,config,catalog,progress);
   await connector.verifyAccount();
   if(cloud){
     // Validate the observed account and owned controls, never a caller flag.
-    for(const url of config.comments.postUrls){const {fingerprint}=await import('./browser.mjs');await connector.open({id:fingerprint(url),url,sourceUrl:url===config.comments.postUrls[0]?config.comments.verificationUrl:undefined});await connector.comments();}
+    for(const url of config.comments.postUrls){const {fingerprint}=await import('./browser.mjs');await connector.open({id:fingerprint(url),url,sourceUrl:url===config.comments.postUrls[0]?config.comments.verificationUrl:undefined});progress('leer_comentarios');await connector.comments();}
     store.setMeta('facebook-cloud-session-digest',digest);
   }
   const notifications=new FacebookCommentNotifications(await context.newPage(),config,store);
+  activePage=notifications.page;notifications.stage=progress;
   await notifications.open();
   const initial=await notifications.collect();
   const savedStart=Number(store.meta('facebook-comments-active-since'));
@@ -58,6 +65,7 @@ try {
   console.log('Vigilancia de avisos de comentarios: publicaciones antiguas y nuevas, sin límite de 20 publicaciones.');
   console.log('La detección depende de los avisos y la carga de Facebook. No se promete una respuesta instantánea.');
   report('watching');
+  starting=false;
   const monitor=(async()=>{
     try {
       while(!stopping){
@@ -104,6 +112,10 @@ try {
     replies_not_loaded:'Facebook no terminó de mostrar las respuestas existentes. Respuestas detenidas.'
   };
   console.log(messages[error.message] || 'El navegador del bot no pudo completar la conexión. No se activaron respuestas sin verificar.');
+  if(process.env.SCALA_FACEBOOK_CLOUD==='1'){
+    const info=connectionErrorInfo(error);
+    console.log('SCALA_CLOUD_FAILURE: '+JSON.stringify({stage,code:info.code,screen:connectionPageState(activePage,ownerId)}));
+  }
   report('connection_required');
   process.exitCode=78;
 }finally{
