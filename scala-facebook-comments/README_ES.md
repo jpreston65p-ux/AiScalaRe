@@ -26,6 +26,8 @@ La conexión de escritorio no navega a `/me/`. Conserva la pestaña del perfil m
 
 El filtro de comentarios se reconoce por controles visibles. Se prefiere «Más recientes», o «Todos los comentarios» cuando esa es la opción disponible, sin exigir que el menú se llame «Orden de comentarios». Se comprueba el cambio del control antes de continuar. Los diálogos de la publicación y los textos de visitantes se excluyen de las opciones, y un clic ambiguo se detiene. Si no se reconoce el menú, se indica cómo seleccionarlo manualmente y reintentar.
 
+Si el enlace de un reel no abre por sí solo los comentarios, se busca un control visible y único para abrir el panel. No se pulsa «Comentar» si hay un editor o borrador visible, ni dentro de formularios o comentarios de visitantes. Después se exige el campo «Comentar como Scala Fe» y se mantienen las verificaciones de identidad y dueño. `SCALA_CLOUD_INTERFACE` solo informa conteos de controles, sin contenido ni nombres privados.
+
 El programa utiliza el Firefox que instala Playwright, independiente del Firefox de Linux Mint. Puede mostrarse como Nightly; reinstalar el Firefox del sistema no sustituye el navegador privado del programa. Referencia: https://playwright.dev/docs/browsers#firefox.
 
 Los registros `SCALA_ETAPA_FALLIDA`, `SCALA_ERROR_CONEXION` y `SCALA_PANTALLA` se guardan también en `data/comments/diagnostico-conexion.txt` (o en el directorio privado configurado). Solo contienen categorías y códigos, nunca direcciones visitadas, datos del cliente ni credenciales. `SCALA_CONEXION_COMPLETADA` indica que la sesión se envió y la configuración se guardó; después se cierra el navegador de conexión de forma anunciada. Aún falta la verificación del servidor.
@@ -89,6 +91,6 @@ npm test
 bash PROBAR_COMENTARIOS.sh
 ```
 
-68 pruebas aprobadas: 29 comentarios, 7 menú de orden, 8 conexión/reintentos, 6 nube/aislamiento y 18 del chat anterior. Los transportes son simulados; la demo no publica. Una prueba del navegador no equivale a una prueba real del bot autenticado.
+74 pruebas aprobadas: 29 comentarios, 7 menú de orden, 6 panel de comentarios, 8 conexión/reintentos, 6 nube/aislamiento y 18 del chat anterior. Los transportes son simulados; la demo no publica. Una prueba del navegador no equivale a una prueba real del bot autenticado.
 
 La fuente pública excluye sesiones, perfiles, bases privadas, claves y dependencias instaladas. Conserva `verifiedPage=false` y `allowSending=false`; las comprobaciones reales y la vinculación son necesarias para habilitar envíos.

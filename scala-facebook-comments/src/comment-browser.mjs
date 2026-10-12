@@ -5,6 +5,7 @@ import { readCommentDom, parseSpanishFacebookTime, commentThreadDepth, readPostC
 import { normalize } from './catalog.mjs';
 import {facebookProfileId} from './connection-flow.mjs';
 import {selectCommentOrder} from './comment-order.mjs';
+import {ensureCommentPanel} from './comment-panel.mjs';
 
 export const postUrl = facebookPostUrl;
 export function authorId(href, base) {
@@ -59,8 +60,11 @@ export class FacebookCommentsBrowser {
     try { matches=this.current?.id===post.id && this.current?.commentId===post.commentId && fingerprint(postUrl(this.page.url(),this.c.ownerId))===post.id; } catch {}
     this.stage('abrir_publicacion');
     if (!matches) await this.page.goto(post.sourceUrl || post.url,{waitUntil:'commit',timeout:60000});
+    await this.checkLogin();
+    if(fingerprint(postUrl(this.page.url(),this.c.ownerId))!==post.id)throw new Error('post_owner_changed');
     this.stage('esperar_campo_comentar');
-    await this.page.locator(this.s.identity).waitFor({state:'visible',timeout:45000});
+    await ensureCommentPanel(this.page,this.s,{stage:this.stage,
+      log:info=>{if(process.env.SCALA_FACEBOOK_CLOUD==='1')console.log('SCALA_CLOUD_INTERFACE: '+JSON.stringify(info));}});
     await this.guard();
     const owners=this.scope().locator(this.s.postAuthor);
     if (await owners.count() !== 1 || authorId(await owners.getAttribute('href'),this.page.url()) !== this.c.ownerId
