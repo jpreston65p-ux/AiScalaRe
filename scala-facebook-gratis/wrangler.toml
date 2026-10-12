@@ -1,0 +1,29 @@
+name = "scala-fe-comentarios-gratis"
+main = "src/index.mjs"
+compatibility_date = "2026-10-12"
+workers_dev = true
+
+[vars]
+SCALA_PAGE_ID = ""
+SCALA_PUBLIC_ORIGIN = ""
+SCALA_ENABLE = "0"
+
+[triggers]
+crons = ["* * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "scala-fe-comentarios"
+# Completar únicamente con el ID de la base D1 gratuita creada en tu cuenta.
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[[queues.producers]]
+binding = "COMMENTS_QUEUE"
+queue = "scala-fe-comentarios"
+
+[[queues.consumers]]
+queue = "scala-fe-comentarios"
+max_batch_size = 1
+max_batch_timeout = 0
+max_retries = 3
+max_concurrency = 1
