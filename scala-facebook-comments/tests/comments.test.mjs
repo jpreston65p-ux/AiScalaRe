@@ -146,6 +146,13 @@ test('la decoración conserva la identificación virtual y como máximo dos emoj
   assert.equal((reply.text.match(/[😊💙📖]/gu)||[]).length,2);
 });
 
+test('un comentario general recibe una respuesta cálida una sola vez, sin inventar información del producto',async t=>{
+  const f=fixture(t),event=f.event('Se ve interesante',{productId:null});
+  await f.processor.handleNotification(event);await f.processor.handleNotification(event);
+  assert.equal(f.sent.length,1);assert.match(f.sent[0].text,/asistente virtual/);assert.match(f.sent[0].text,/Gracias por escribirnos/);
+  assert.match(f.sent[0].text,/💙/);assert.doesNotMatch(f.sent[0].text,/Gedeón|precio|descuento|pago confirmado/);
+});
+
 test('las consultas generales usan el catálogo confirmado y las dudas sin producto piden una sola aclaración',()=>{
   const catalog=publicCommentReply('¿Qué productos tienen?',catalogFor(),{requireProductContext:true});
   assert.match(catalog.text,/Gedeón/);assert.match(catalog.text,/digital PDF/);

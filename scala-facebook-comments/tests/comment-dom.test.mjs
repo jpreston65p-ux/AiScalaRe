@@ -83,6 +83,8 @@ test('un aviso agrupado con nuevo comment_id se detecta aunque conserve el mismo
 test('configuración calibrada acepta el modo de avisos con lectura cada 3 segundos',()=>{
   const validated=validateConfig({...config,verifiedPage:true,allowSending:true});
   assert.equal(validated.pollSeconds,3);assert.equal(validated.comments.monitor,'notifications');
+  assert.equal(validated.comments.notificationRefreshSeconds,5);
+  assert.throws(()=>validateConfig({...config,verifiedPage:true,allowSending:true,comments:{...config.comments,notificationRefreshSeconds:4}}),/invalid_config/);
   assert.equal(validated.comments.maxPosts,undefined);
   assert.throws(()=>validateConfig({...config,verifiedPage:true,allowSending:true,comments:{...config.comments,timeZone:''}}),/invalid_config/);
 });

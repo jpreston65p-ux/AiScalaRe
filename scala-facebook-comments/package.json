@@ -1,9 +1,9 @@
 {
   "name": "scala-facebook-browser-bot",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
-  "description": "Comentarios SCALA por avisos de Facebook, sin límite de publicaciones; sesión del runtime pendiente",
+  "description": "Comentarios públicos SCALA con navegador privado en Railway y vinculación desde Linux Mint",
   "engines": {
     "node": ">=24 <25"
   },

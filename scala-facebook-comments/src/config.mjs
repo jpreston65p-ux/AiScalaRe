@@ -38,7 +38,7 @@ function validateCommentConfig(config) {
   try { new Intl.DateTimeFormat('es', { timeZone:c.timeZone }).format(); } catch { throw new Error('invalid_config'); }
   if (!/^\d{5,20}$/.test(c.ownerId) || c.monitor !== 'notifications' || !Array.isArray(c.postUrls) || !c.postUrls.length
     || !Number.isInteger(config.pollSeconds) || config.pollSeconds < 2 || config.pollSeconds > 30
-    || !Number.isInteger(c.notificationRefreshSeconds) || c.notificationRefreshSeconds < 30 || c.notificationRefreshSeconds > 300
+    || !Number.isInteger(c.notificationRefreshSeconds) || c.notificationRefreshSeconds < 5 || c.notificationRefreshSeconds > 300
     || !Number.isInteger(c.maxCommentAgeSeconds) || c.maxCommentAgeSeconds < 300 || c.maxCommentAgeSeconds > 86400
     || !Number.isInteger(config.dailyLimit) || config.dailyLimit < 1 || config.dailyLimit > 1000 || typeof config.pageName !== 'string' || !config.pageName.trim()) throw new Error('invalid_config');
   const pageUrl = new URL(facebookUrl(config.pageUrl));

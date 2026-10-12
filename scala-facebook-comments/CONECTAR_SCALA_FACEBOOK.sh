@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 source "$(dirname -- "${BASH_SOURCE[0]}")/scripts/entorno.sh"
-node src/connect-comments.mjs
+node src/connect-comments.mjs "$@"

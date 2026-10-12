@@ -12,7 +12,7 @@
     "ownerId": "61576458508649",
     "monitor": "notifications",
     "timeZone": "America/La_Paz",
-    "notificationRefreshSeconds": 30,
+    "notificationRefreshSeconds": 5,
     "maxCommentAgeSeconds": 86400,
     "postUrls": [
       "https://www.facebook.com/reel/1079349435002481/"

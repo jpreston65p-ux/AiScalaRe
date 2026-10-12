@@ -2,4 +2,7 @@ node_modules/
 data/
 *.sqlite*
 .env
+.env.*
+.agents/
+.codex/
 *.log

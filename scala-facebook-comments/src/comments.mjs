@@ -7,6 +7,7 @@ import { hoursStatus } from './hours.mjs';
 export function publicCommentReply(input, catalog, { productId = null, formal = false, requireProductContext = false } = {}) {
   const text = normalize(typeof input === 'string' ? input.slice(0, 2000) : '');
   if (!text) return null;
+  if (/^https?:\/\/\S+$/.test(text)) return null;
   if (/^(baja|stop|parar|detener|no me respondas|no mas respuestas)[.!]*$/.test(text)) return { text: 'De acuerdo. Pausaré las respuestas automáticas a tus comentarios.', stop: true };
   const named = catalog.products.find(p => [p.title, ...p.aliases].some(alias => normalize(alias).length >= 4 && text.includes(normalize(alias))));
   const product = named || catalog.products.find(p => p.id === productId) || ((!requireProductContext || /\b(catalogo|productos)\b/.test(text)) && catalog.products.length === 1 ? catalog.products[0] : null);
@@ -39,9 +40,9 @@ export function publicCommentReply(input, catalog, { productId = null, formal = 
   if (!parts.length && appreciation) parts.push('¡Gracias por compartir tu comentario! 💙');
   if (!parts.length && /^(hola|buenas|buenos dias|buenas tardes|buenas noches)[.! 😊💙]*$/.test(text)) parts.push('¡Hola! 😊 Qué gusto saludarte. ¿Qué te gustaría conocer sobre los productos de SCALA?');
   if (!parts.length && /[?¿]/.test(input)) parts.push('¿Puedes aclarar qué necesitas saber sobre SCALA?');
-  if (!parts.length) return null;
+  if (!parts.length) parts.push('¡Gracias por escribirnos! 💙\nPuedes preguntarnos por los productos de SCALA cuando lo necesites.');
   // Even a comment asking several questions stays within the brand's 2-emoji limit.
   let emojiCount = 0;
   const body = parts.join('\n\n').replace(/[😊💙📖]/gu, emoji => ++emojiCount <= 2 ? emoji : '').replace(/ +\./g, '.');
-  return { text: customerText(`SCALA · asistente virtual\n${body}`, {}, formal), stop: false };
+  return { text: customerText(`✦ SCALA · asistente virtual ✦\n\n${body}`, {}, formal), stop: false };
 }

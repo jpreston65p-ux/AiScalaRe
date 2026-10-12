@@ -1,62 +1,77 @@
-# SCALA Facebook — comentarios públicos
+# SCALA Facebook — comentarios desde la nube
 
-Actualización 0.2, 11 de octubre de 2026.
+Actualización 0.3, 11 de octubre de 2026, hora de Bolivia.
 
-**Estado real: una respuesta pública de prueba publicada y verificada en Facebook; el programa todavía no tiene una sesión conectada ni un servicio activo de Facebook en Railway.** El navegador de esta conversación y el navegador del programa son sesiones diferentes.
+**Estado: el servicio independiente de Facebook y su volumen privado están creados en Railway. Firefox pasó una prueba real de aislamiento de contenido. Falta vincular la sesión propia del programa y observar una respuesta autónoma.** La respuesta de prueba publicada mediante el navegador de esta conversación permanece visible; no fue enviada por este programa.
 
-La cuenta comprobada es Scala Fe, perfil profesional ID 61576458508649. Se verificaron controles en un reel y en una publicación de foto anterior. La respuesta publicada fue una prueba mediante el navegador de esta conversación; no demuestra que el programa responda por sí solo.
+Cuenta autorizada: **Scala Fe, perfil profesional ID 61576458508649**. No se cambió de cuenta ni se creó una Página distinta. WhatsApp funciona en su servicio independiente y esta actualización no lo modifica.
 
-## Cambios
+## Conectar desde Linux Mint
 
-- Se eliminó el recorrido limitado a 20 publicaciones. La detección utiliza los avisos de comentarios de Facebook, que pueden apuntar a publicaciones antiguas o nuevas.
-- La pantalla de avisos se lee cada 3 segundos y se vuelve a cargar cada 30 segundos. Son intervalos de lectura: el tiempo total depende de Facebook, la conexión y la cola de respuestas.
-- El primer comentario nuevo de una publicación antigua o recién creada ya no se descarta por crear una línea base para esa publicación.
-- Los avisos agrupados se identifican por el comentario de destino, aunque reutilicen el mismo identificador de notificación. Las publicaciones con actividad reciente se revisan durante tres minutos para detectar otros comentarios del grupo.
-- Los pendientes y la deduplicación sobreviven a reinicios. Los comentarios posteriores a la activación pueden recuperarse hasta 24 horas después si Facebook mantiene el aviso disponible.
-- Se corrigieron las respuestas situadas junto al comentario, la fecha completa en español, la lectura de emojis y la identidad del campo «Comentar como Scala Fe».
-- Se muestra el filtro «Más recientes», se abren respuestas existentes y se comprueba el autor y el comentario padre antes de publicar. Una respuesta temporal «Publicando» no cuenta como un envío confirmado.
+Descarga `INSTALAR_SCALA_FACEBOOK_NUBE.sh` en Descargas y ejecuta:
 
-**No representa una garantía de todos los comentarios ni de respuestas instantáneas.** Facebook puede omitir, agrupar, retrasar o dejar de mostrar avisos. Se atienden comentarios directos de visitantes en publicaciones propias con enlaces reconocidos; no comentarios en grupos, publicaciones ajenas o respuestas anidadas. La cuota configurada es de 100 respuestas diarias.
+```bash
+bash "$(xdg-user-dir DOWNLOAD)/INSTALAR_SCALA_FACEBOOK_NUBE.sh"
+```
+
+El instalador crea `SCALA_FACEBOOK_NUBE` en tu carpeta de Descargas, descarga el código público de la rama `scala-facebook-comentarios-cloud` de AiScalaRe e instala dependencias oficiales. Usa Node.js 24; puede reutilizar el instalado para SCALA WhatsApp. No sobrescribe tu catálogo ni configuración si ya existen en esa carpeta.
+
+1. En la ventana propia de Firefox, inicia sesión en Facebook y selecciona **Scala Fe**.
+2. Pulsa Enter en la terminal cuando se vea la cuenta correcta.
+3. Si falta acceso a Railway en esa PC, completa el formulario de Railway que abre su herramienta oficial.
+
+El programa verifica cuenta, publicación propia y avisos antes de enviar su sesión al servicio `scala-facebook-comentarios`. El servidor vuelve a verificar identidad y controles antes de publicar. Si Facebook solicita otra verificación o cambia su interfaz, los envíos se detienen y debe revisarse la conexión.
+
+**No escribas contraseñas, códigos ni sesiones en el chat.** Solo se obtiene la sesión del navegador propio de este programa; nunca se lee ni se exporta el navegador de ChatGPT. Se envía por la entrada privada de la herramienta oficial de Railway, al proyecto, entorno y servicio específicos. No se incluye en enlaces, argumentos de comandos, archivos públicos ni consola.
+
+Después del registro `SCALA_CLOUD_WATCHING`, un visitante debe dejar un comentario nuevo para comprobar la respuesta. Solo `SCALA_CLOUD_REPLY_CONFIRMED` demuestra una respuesta autónoma observada. Enviar la sesión o alcanzar `SUCCESS` no demuestran por sí solos que el bot responda.
+
+**Cuando la conexión y la respuesta autónoma estén verificadas, puedes cerrar la terminal y apagar la PC.** Railway debe permanecer activo y la sesión de Facebook debe seguir válida.
+
+Para reconectar una carpeta preparada:
+
+```bash
+cd "$(xdg-user-dir DOWNLOAD)/SCALA_FACEBOOK_NUBE"
+bash CONECTAR_SCALA_FACEBOOK.sh --nube
+```
+
+## Publicaciones antiguas y nuevas
+
+- Los avisos globales pueden señalar fotos antiguas o reels nuevos. Se eliminó el recorrido limitado a 20 publicaciones.
+- Lectura cada **3 segundos** y recarga cada **5 segundos**. Son intervalos del programa, no una promesa de tiempo total.
+- El primer comentario nuevo de una publicación recién detectada ya no se descarta al crear una línea base.
+- Los avisos agrupados se identifican por el comentario de destino, aunque mantengan el mismo ID de notificación. Se revisan posts activos durante tres minutos para buscar otros comentarios nuevos.
+- Pendientes y deduplicación sobreviven a reinicios. Se recuperan comentarios posteriores a la activación hasta 24 horas después, si Facebook conserva el aviso.
+- Antes de enviar se verifican dueño, autor, comentario padre, fecha en español, zona America/La_Paz y controles visibles. Se conservan los borradores humanos.
+- Solo se confirma el envío al observar una respuesta propia persistida, con ID numérico real y texto coincidente bajo el mismo comentario. Un envío incierto no se repite.
+
+**No se garantiza respuesta instantánea ni cobertura de todos los comentarios:** Facebook puede retrasar, agrupar u omitir avisos. Se atienden comentarios directos de texto en posts propios con enlaces y controles reconocidos. Se omiten comentarios del dueño, respuestas anidadas, hilos ya atendidos, imágenes sin texto, enlaces aislados y grupos o posts ajenos. La cuota configurada es de 100 respuestas diarias.
 
 ## Mensajes
 
-Las respuestas identifican al asistente virtual de SCALA, usan párrafos breves y como máximo dos emojis. El catálogo confirmado incluye «Gedeón, el valiente obediente», cuento digital PDF basado en Jueces 6 y 7. No se inventan productos, promociones, edades, páginas ni pagos.
+Cabecera decorada, párrafos breves y como máximo dos emojis. Un comentario general recibe un agradecimiento cálido. Las consultas usan únicamente datos confirmados.
 
-El producto puede identificarse por su mención en el comentario, una asociación configurada o el título del catálogo presente en el texto de la publicación. El texto de otros visitantes no configura el producto de una publicación. Si el producto no se puede identificar, se hace una sola pregunta para aclararlo.
+Producto: **Gedeón, el valiente obediente**, cuento digital PDF basado en Jueces 6 y 7 para conversar sobre valentía, fe y obediencia. Precio y moneda, pagos, horario y descarga siguen sin configurar. No se inventan descuentos, edades, páginas ni materiales.
 
-El precio y la moneda, los medios de pago, el horario y la descarga siguen sin configurar. La respuesta del precio informa que debe confirmarse. Los pagos particulares, comprobantes y entregas se orientan a privado; no se afirma haber enviado mensajes, avisado al equipo o autorizado compras.
+El producto se identifica por su mención, asociación configurada o título confirmado en la publicación. Otros comentarios no configuran productos. Si falta contexto, se pide una sola aclaración. Pagos particulares, comprobantes y entregas se orientan a privado sin afirmar acciones no realizadas.
 
-## Conectar el programa en Linux Mint
+## Railway
 
-Se necesita Node.js 24. Descomprime el ZIP en Descargas:
+- Proyecto: `86dc9c33-9042-48a9-8201-b94e04232179`.
+- Producción: `7da2eda3-0a63-4bb2-9b2f-d606f18a3987`.
+- Servicio Facebook: `1ff3639b-084e-48d6-a8fa-be50be6c3075`.
+- Volumen privado `sesion-facebook`, montado en `/app/data`.
+- Firefox corre sin privilegios. Se observan filtros seccomp adicionales de contenido y NoNewPrivs, sin desactivar el aislamiento.
+- `/health` informa estado y respuesta autónoma confirmada durante ese inicio. No muestra credenciales, clientes ni textos. No hay rutas públicas para subir sesiones o controlar el navegador.
+- Imagen oficial pública de Node y descarga de una revisión fija del código público. La integración de GitHub en Railway no permitió enlazar directamente el repositorio. La web principal y la rama de WhatsApp no se modificaron.
 
-```bash
-cd "$(xdg-user-dir DOWNLOAD)/SCALA_FACEBOOK_BOT"
-bash PREPARAR_SCALA_FACEBOOK.sh
-bash CONECTAR_SCALA_FACEBOOK.sh
-bash INICIAR_SCALA_FACEBOOK.sh
-```
-
-La preparación instala Playwright y su Chromium oficial. La conexión abre una ventana de Facebook: inicia sesión allí y selecciona Scala Fe. Pulsa Enter en la terminal para verificar la cuenta y los controles. No introduzcas contraseñas o códigos en el chat ni en la terminal.
-
-El programa comprueba la sesión antes de habilitar envíos en la configuración local. La primera respuesta autónoma debe verificarse con un comentario nuevo; el programa exige observar un identificador numérico real, el autor SCALA y el mismo comentario padre antes de marcarla como enviada. Los envíos inciertos no se repiten automáticamente.
-
-El ZIP mantiene `verifiedPage=false` y `allowSending=false`. Descargar el archivo no conecta Facebook. La sesión del programa se guarda en su carpeta privada; no se exporta la sesión de esta conversación. La interfaz calibrada está en español y el navegador del programa usa la zona America/La_Paz.
-
-Para ver mensajes sin publicar:
+## Comprobaciones
 
 ```bash
+npm test
 bash PROBAR_COMENTARIOS.sh
 ```
 
-La demo no conecta a Facebook. Las comprobaciones técnicas se ejecutan con `npm test`.
+52 pruebas aprobadas: 28 comentarios, 6 nube/aislamiento y 18 del chat anterior. Los transportes son simulados; la demo no publica. Una prueba del navegador no equivale a una prueba real del bot autenticado.
 
-## Nube
-
-**No hay un servicio de Facebook desplegado o autenticado en Railway. Esta actualización no funciona todavía con la PC apagada.** Ejecutar el programa en Linux Mint requiere que la PC y el proceso permanezcan encendidos.
-
-Para la nube hace falta un servicio independiente, un navegador compatible, almacenamiento privado persistente y una sesión de Facebook autorizada en ese navegador. La sesión abierta en esta conversación no puede reutilizarse automáticamente como sesión del programa. WhatsApp permanece funcionando en su servicio separado y no se modificó.
-
-El código admite una carpeta privada configurada mediante `SCALA_FACEBOOK_DATA_DIR` y ejecución sin ventana mediante `SCALA_FACEBOOK_HEADLESS=1`; eso prepara el código para un servidor y no prueba su funcionamiento allí. No se desactiva el aislamiento de Chromium.
-
-El ZIP incluye solo código y datos públicos: excluye perfiles de navegador, sesiones, bases de datos, claves y dependencias instaladas.
+La fuente pública excluye sesiones, perfiles, bases privadas, claves y dependencias instaladas. Conserva `verifiedPage=false` y `allowSending=false`; las comprobaciones reales y la vinculación son necesarias para habilitar envíos.

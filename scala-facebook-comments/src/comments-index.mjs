@@ -1,31 +1,48 @@
 import { mkdirSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { loadConfig } from './config.mjs';
+import { loadConfig,validateConfig } from './config.mjs';
 import { Store } from './store.mjs';
 import { FacebookCommentProcessor } from './comment-processor.mjs';
+import {launchCommentsContext,commentsBrowserName} from './browser-runtime.mjs';
+import {decodeSessionPacket,sessionDigest,cloudTarget} from './cloud-session.mjs';
 
 process.umask(0o077);
 let context,store,lease,renew,processor,stopping=false;
 process.once('SIGINT',()=>{stopping=true;});
 process.once('SIGTERM',()=>{stopping=true;});
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const report=state=>process.send?.({type:'scala_status',state,at:Date.now()});
 try {
-  const {config,catalog,dataDir}=loadConfig();
+  const loaded=loadConfig({live:false}),encoded=process.env[cloudTarget.variable];
+  const cloud=process.env.SCALA_FACEBOOK_CLOUD==='1';
+  if(cloud && (!encoded || encoded.length>87384 || commentsBrowserName()!=='firefox'))throw new Error('invalid_cloud_session');
+  const config=validateConfig(cloud?{...loaded.config,verifiedPage:true,allowSending:true}:loaded.config),{catalog,dataDir}=loaded;
   if (config.mode !== 'comments') throw new Error('comments_not_selected');
   const privateDir=join(dataDir,'comments');
   mkdirSync(privateDir,{recursive:true,mode:0o700});chmodSync(privateDir,0o700);
   store=new Store(privateDir);lease=randomBytes(16).toString('hex');store.acquireRunner(lease);
   renew=setInterval(()=>{try{store.renewRunner(lease);}catch{stopping=true;}},5000);
-  const {chromium}=await import('playwright');
   const {FacebookCommentsBrowser}=await import('./comment-browser.mjs');
   const {FacebookCommentNotifications}=await import('./comment-notifications.mjs');
-  const profile=join(privateDir,'browser');
+  const profile=join(privateDir,'browser-'+commentsBrowserName());
   mkdirSync(profile,{recursive:true,mode:0o700});chmodSync(profile,0o700);
-  context=await chromium.launchPersistentContext(profile,{headless:process.env.SCALA_FACEBOOK_HEADLESS==='1',chromiumSandbox:true,acceptDownloads:false,timezoneId:config.comments.timeZone,locale:'es-BO'});
+  const digest=cloud?sessionDigest(encoded):null;
+  let session=cloud && store.meta('facebook-cloud-session-digest')!==digest?decodeSessionPacket(encoded,config.comments.ownerId):null;
+  context=await launchCommentsContext(profile,config,{headless:process.env.SCALA_FACEBOOK_HEADLESS==='1'});
+  if(cloud && !session){
+    const cookies=await context.cookies('https://www.facebook.com/');
+    if(!cookies.some(cookie=>cookie.name==='c_user') || !cookies.some(cookie=>cookie.name==='xs'))session=decodeSessionPacket(encoded,config.comments.ownerId);
+  }
+  if(session){await context.clearCookies();await context.addCookies(session.cookies);}
   const page=context.pages()[0] || await context.newPage();
   const connector=new FacebookCommentsBrowser(page,config,catalog);
   await connector.verifyAccount();
+  if(cloud){
+    // Validate the observed account and owned controls, never a caller flag.
+    for(const url of config.comments.postUrls){const {fingerprint}=await import('./browser.mjs');await connector.open({id:fingerprint(url),url});await connector.comments();}
+    store.setMeta('facebook-cloud-session-digest',digest);
+  }
   const notifications=new FacebookCommentNotifications(await context.newPage(),config,store);
   await notifications.open();
   const initial=await notifications.collect();
@@ -34,12 +51,13 @@ try {
   store.setMeta('facebook-comments-active-since',startedAt);
   processor=new FacebookCommentProcessor({store,catalog,ownerId:config.comments.ownerId,dailyLimit:config.dailyLimit,startedAt,maxCommentAgeSeconds:config.comments.maxCommentAgeSeconds,
     send:async (...args)=>{if(stopping)throw new Error('runner_stopped');store.renewRunner(lease);return connector.send(...args);},
-    log:event=>console.log(`[${new Date().toISOString()}] ${event}`)});
+    log:event=>{console.log(`[${new Date().toISOString()}] ${event}`);if(event==='respuesta_publica_confirmada')report('confirmed');}});
   const queue=[],pending=new Set(),recent=new Map();
   const enqueue=(target,fresh=true)=>{if(fresh)recent.set(target.id,{target,until:Date.now()+180000});if(!pending.has(target.id)){pending.add(target.id);queue.push(target);}};
   initial.forEach(target=>enqueue(target));
   console.log('Vigilancia de avisos de comentarios: publicaciones antiguas y nuevas, sin límite de 20 publicaciones.');
   console.log('La detección depende de los avisos y la carga de Facebook. No se promete una respuesta instantánea.');
+  report('watching');
   const monitor=(async()=>{
     try {
       while(!stopping){
@@ -86,6 +104,7 @@ try {
     replies_not_loaded:'Facebook no terminó de mostrar las respuestas existentes. Respuestas detenidas.'
   };
   console.log(messages[error.message] || 'El navegador del bot no pudo completar la conexión. No se activaron respuestas sin verificar.');
+  report('connection_required');
   process.exitCode=78;
 }finally{
   stopping=true;clearInterval(renew);
