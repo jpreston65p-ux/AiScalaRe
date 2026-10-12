@@ -67,6 +67,10 @@ export class FacebookCommentsBrowser {
     try { matches=this.current?.id===post.id && this.current?.commentId===post.commentId && fingerprint(postUrl(this.page.url(),this.c.ownerId))===post.id; } catch {}
     this.stage('abrir_publicacion');
     if (!matches) await this.page.goto(post.sourceUrl || post.url,{waitUntil:'commit',timeout:60000});
+    this.stage('esperar_interfaz_publicacion');
+    // A visible SSR button can precede the document's deferred UI handlers.
+    // Do not click it while the initial document is still loading.
+    await this.page.waitForLoadState('domcontentloaded',{timeout:45000});
     await this.checkLogin();
     if(fingerprint(postUrl(this.page.url(),this.c.ownerId))!==post.id)throw new Error('post_owner_changed');
     this.stage('esperar_campo_comentar');

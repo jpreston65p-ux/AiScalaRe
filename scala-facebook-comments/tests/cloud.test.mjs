@@ -4,6 +4,12 @@ import {cloudTarget,encodeSessionPacket,decodeSessionPacket} from '../src/cloud-
 import {uploadSession} from '../src/cloud-upload.mjs';
 import {sandboxProcess,protectedFirefoxContent} from '../src/browser-sandbox.mjs';
 import {cloudBrowserHeadless} from '../src/browser-runtime.mjs';
+import {memoryCounters} from '../src/cloud-resources.mjs';
+
+test('el diagnóstico de memoria solo conserva contadores del kernel permitidos',()=>{
+  const info=memoryCounters('anon 200\nfile 300\nshmem 10\nclave_privada FICTICIA\nkernel NaN\n','max 5\noom 1\noom_kill 0\nsecreto 99\n');
+  assert.deepEqual(info,{bytes:{anon:200,file:300,shmem:10},events:{max:5,oom:1,oom_kill:0}});
+});
 
 test('el servidor respeta la pantalla virtual y rechaza modos de navegador desconocidos',()=>{
   assert.equal(cloudBrowserHeadless({}),true);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {isPlaybackRequest,reduceCloudPlayback} from '../src/cloud-playback.mjs';
+import {isPlaybackRequest,isReelImageRequest,reduceCloudPlayback} from '../src/cloud-playback.mjs';
 
 const request=(url,type='fetch',method='GET',navigation=false)=>({
   url:()=>url,resourceType:()=>type,method:()=>method,isNavigationRequest:()=>navigation
@@ -30,4 +30,15 @@ test('el filtro solo aborta medios y continúa el resto sin registrarlos',async(
   await handler(route(request('https://video.xx.fbcdn.net/video.mp4')));
   await handler(route(request('https://www.facebook.com/api/graphql/','xhr','POST')));
   assert.deepEqual(calls,[['abort','blockedbyclient'],['continue']]);
+});
+
+test('las imágenes del carrusel se omiten sin bloquear imágenes de acceso o verificación',()=>{
+  const image=request('https://scontent.xx.fbcdn.net/poster.jpg','image');
+  for(const frame of ['https://www.facebook.com/checkpoint/','https://www.facebook.com/login/',
+    'https://www.facebook.com/profile.php?id=61576458508649','https://www.facebook.com.ejemplo.invalid/reel/1079349435002481/']){
+    image.frame=()=>({url:()=>frame});assert.equal(isReelImageRequest(image),false);
+  }
+  image.frame=()=>({url:()=> 'https://www.facebook.com/reel/1079349435002481/'});
+  assert.equal(isReelImageRequest(image),true);
+  const foreign={...image,url:()=> 'https://example.invalid/poster.jpg'};assert.equal(isReelImageRequest(foreign),false);
 });

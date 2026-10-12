@@ -8,6 +8,17 @@ export function isPlaybackRequest(request){
     && /\.(mp4|webm|m4s|m3u8|mpd)$/i.test(url.pathname);
 }
 
+export function isReelImageRequest(request){
+  if(request.method()!=='GET' || request.isNavigationRequest() || request.resourceType()!=='image')return false;
+  try{
+    const url=new URL(request.url()),frame=new URL(request.frame().url());
+    // Apply only inside the reel UI, never a login or verification document.
+    return url.protocol==='https:' && /(^|\.)fbcdn\.net$/.test(url.hostname)
+      && frame.protocol==='https:' && ['www.facebook.com','facebook.com'].includes(frame.hostname)
+      && /^\/reel\/\d+\/?$/.test(frame.pathname);
+  }catch{return false;}
+}
+
 export async function reduceCloudPlayback(context){
-  await context.route('**/*',route=>isPlaybackRequest(route.request()) ? route.abort('blockedbyclient') : route.continue());
+  await context.route('**/*',route=>isPlaybackRequest(route.request()) || isReelImageRequest(route.request()) ? route.abort('blockedbyclient') : route.continue());
 }
