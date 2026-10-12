@@ -91,6 +91,6 @@ npm test
 bash PROBAR_COMENTARIOS.sh
 ```
 
-74 pruebas aprobadas: 29 comentarios, 7 menú de orden, 6 panel de comentarios, 8 conexión/reintentos, 6 nube/aislamiento y 18 del chat anterior. Los transportes son simulados; la demo no publica. Una prueba del navegador no equivale a una prueba real del bot autenticado.
+75 pruebas aprobadas: 29 comentarios, 7 menú de orden, 7 panel de comentarios, 8 conexión/reintentos, 6 nube/aislamiento y 18 del chat anterior. Los transportes son simulados; la demo no publica. Una prueba del navegador no equivale a una prueba real del bot autenticado.
 
 La fuente pública excluye sesiones, perfiles, bases privadas, claves y dependencias instaladas. Conserva `verifiedPage=false` y `allowSending=false`; las comprobaciones reales y la vinculación son necesarias para habilitar envíos.

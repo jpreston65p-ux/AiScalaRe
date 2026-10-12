@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseHTML} from 'linkedom';
+import {runInNewContext} from 'node:vm';
 import {isCommentPanelControl,ensureCommentPanel} from '../src/comment-panel.mjs';
 
 const selectors={identity:'[data-scala]',commentRows:'[data-comment]',replyRows:'[data-reply]'};
@@ -47,4 +48,9 @@ test('dos controles visibles no provocan un clic ambiguo',async()=>{
 test('abrir un panel sin encontrar el campo autorizado no permite continuar',async()=>{
   const f=fixture({reveal:false});await assert.rejects(f.run(),{name:'TimeoutError'});
   assert.equal(f.logs.at(-1).expectedComposer,0);
+});
+
+test('el comprobador funciona serializado sin las variables del módulo de Node',()=>{
+  const button=element('<div role="button" aria-label="Comentar"></div>');
+  assert.equal(runInNewContext('('+isCommentPanelControl.toString()+')(element,selectors)',{element:button,selectors}),true);
 });

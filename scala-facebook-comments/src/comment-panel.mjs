@@ -4,7 +4,8 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 export function isCommentPanelControl(element,selectors){
   if(element.closest('form,[role="form"]') || element.getAttribute('type')==='submit'
     || element.closest(selectors.commentRows+', '+selectors.replyRows))return false;
-  return names.test((element.getAttribute('aria-label') || element.textContent || '').trim());
+  // Playwright serializes this function: its pattern must stay local.
+  return /^(Comentar|Comentarios|Ver comentarios|Mostrar comentarios)$/.test((element.getAttribute('aria-label') || element.textContent || '').trim());
 }
 
 async function visible(locator){
