@@ -20,6 +20,7 @@ export const firefoxProtection={
   'dom.filesystem.pathcheck.disabled':false,
   'dom.file.createInChild':false,
   'fission.webContentIsolationStrategy':1,
+  'browser.sessionhistory.max_total_viewers':0,
   'browser.safebrowsing.malware.enabled':true,
   'browser.safebrowsing.phishing.enabled':true,
   'browser.safebrowsing.blockedURIs.enabled':true,
@@ -42,3 +43,4 @@ export async function launchCommentsContext(profile,config,{headless=false}={}){
     return context;
   }catch(error){await context.close();throw error;}
 }
+

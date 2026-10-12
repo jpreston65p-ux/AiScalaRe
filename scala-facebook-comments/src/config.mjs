@@ -45,6 +45,15 @@ function validateCommentConfig(config) {
   if (!['facebook.com','www.facebook.com'].includes(pageUrl.hostname)
     || !(new RegExp('^/p/[^/]+-' + c.ownerId + '/$').test(pageUrl.pathname) || pageUrl.pathname === '/profile.php' && pageUrl.searchParams.get('id') === c.ownerId)) throw new Error('invalid_profile_url');
   const postUrls=c.postUrls.map(url=>facebookPostUrl(url,c.ownerId));
+  if(c.postViewByPost!=null){
+    if(typeof c.postViewByPost!=='object' || Array.isArray(c.postViewByPost))throw new Error('invalid_config');
+    for(const [key,value] of Object.entries(c.postViewByPost)){
+      if(facebookPostUrl(key,c.ownerId)!==key)throw new Error('invalid_config');
+      const view=new URL(facebookUrl(value));
+      if(view.pathname!=='/permalink.php' || facebookPostUrl(value,c.ownerId)!==value
+        || [...view.searchParams.keys()].some(key=>!['story_fbid','id'].includes(key)))throw new Error('invalid_config');
+    }
+  }
   if(c.verificationUrl){
     const url=new URL(facebookUrl(c.verificationUrl));
     if(facebookPostUrl(url.href,c.ownerId)!==postUrls[0] || !/^\d+$/.test(url.searchParams.get('comment_id') || '')
@@ -57,3 +66,4 @@ export function loadConfig({ live = true } = {}) {
   const raw = JSON.parse(readFileSync(resolve(root, 'facebook.config.json'), 'utf8'));
   return { config: live ? validateConfig(raw) : raw, catalog: catalogFor({ WHATSAPP_CATALOG_JSON: readFileSync(resolve(root, 'catalogo.json'), 'utf8') }), dataDir: process.env.SCALA_FACEBOOK_DATA_DIR ? resolve(process.env.SCALA_FACEBOOK_DATA_DIR) : resolve(root, 'data') };
 }
+

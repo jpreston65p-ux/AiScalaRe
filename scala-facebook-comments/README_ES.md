@@ -1,3 +1,17 @@
+# SCALA · Comentarios en el Scala Fe actual
+
+Esta versión conserva el perfil profesional Scala Fe (61576458508649). Usa exclusivamente la sesión propia del programa que el administrador vincula desde Linux Mint a su servicio privado en Railway. La sesión de ChatGPT es independiente y nunca se exporta.
+
+El proceso abre los comentarios de los Reels en su vista normal, verifica el autor y la publicación, y usa una sola pestaña para alternar entre avisos y respuestas. Conserva los controles contra duplicados, respuestas inciertas, borradores de personas, fechas desconocidas y solicitudes de baja. No modifica publicaciones, no elimina comentarios ni confirma pagos o entregas.
+
+La puesta en marcha puede recuperar una sola consulta reciente por autor en las publicaciones de comprobación cuando se configura explícitamente SCALA_FACEBOOK_RECOVER_RECENT=1; la recuperación se realiza una sola vez y se limita a las últimas 24 horas. Los comentarios del dueño y los hilos atendidos se excluyen.
+
+La página raíz del servicio y /health muestran el estado real. Un despliegue SUCCESS solo prueba que arrancó el servicio HTTP. Para confirmar el bot deben observarse la vigilancia de avisos y una respuesta publicada y comprobada en Facebook. La sesión puede necesitar una nueva vinculación si Facebook la revoca o vence; no se promete latencia instantánea ni funcionamiento permanente sin mantenimiento.
+
+El sitio vitacala.online y el servicio de WhatsApp son independientes de este cambio.
+
+---
+
 # SCALA Facebook — comentarios desde la nube
 
 Actualización 0.3, 11 de octubre de 2026, hora de Bolivia.
@@ -94,3 +108,4 @@ bash PROBAR_COMENTARIOS.sh
 75 pruebas aprobadas: 29 comentarios, 7 menú de orden, 7 panel de comentarios, 8 conexión/reintentos, 6 nube/aislamiento y 18 del chat anterior. Los transportes son simulados; la demo no publica. Una prueba del navegador no equivale a una prueba real del bot autenticado.
 
 La fuente pública excluye sesiones, perfiles, bases privadas, claves y dependencias instaladas. Conserva `verifiedPage=false` y `allowSending=false`; las comprobaciones reales y la vinculación son necesarias para habilitar envíos.
+

@@ -32,8 +32,15 @@ export function decodeSessionPacket(encoded,ownerId,now=Date.now()){
   try{
     const bytes=Buffer.from(encoded,'base64');
     if(bytes.toString('base64')!==encoded || bytes.length>65536)throw new Error();
-    return validateSessionPacket(JSON.parse(bytes.toString('utf8')),ownerId,now);
+    const packet=JSON.parse(bytes.toString('utf8'));
+    if(!Number.isFinite(packet?.createdAt) || packet.createdAt>now+60000)throw new Error();
+    // Short-lived optional cookies can expire after an authorized upload.
+    // Validate the packet at creation, then retain only currently live cookies.
+    const valid=validateSessionPacket(packet,ownerId,packet.createdAt);
+    valid.cookies=valid.cookies.filter(cookie=>cookie.expires===-1 || cookie.expires>now/1000);
+    return validateSessionPacket(valid,ownerId,now);
   }catch{throw new Error('invalid_cloud_session');}
 }
 
 export function sessionDigest(encoded){return createHash('sha256').update(encoded).digest('hex');}
+

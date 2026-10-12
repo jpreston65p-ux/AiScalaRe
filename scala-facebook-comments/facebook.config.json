@@ -32,6 +32,9 @@
       "replyRows": "[role=\"article\"][aria-label^=\"Respuesta de \"]",
       "timeAttribute": "aria-label",
       "timeFormat": "spanish-civil"
+    },
+    "postViewByPost": {
+      "https://www.facebook.com/reel/1079349435002481/": "https://www.facebook.com/permalink.php?story_fbid=122129397932881950&id=61576458508649"
     }
   }
 }

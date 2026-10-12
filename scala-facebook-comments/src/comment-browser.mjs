@@ -6,6 +6,7 @@ import { normalize } from './catalog.mjs';
 import {facebookProfileId} from './connection-flow.mjs';
 import {selectCommentOrder} from './comment-order.mjs';
 import {ensureCommentPanel} from './comment-panel.mjs';
+import {presentationUrl,postLinksFromDom,verifiedPostAliases} from './post-view.mjs';
 
 export const postUrl = facebookPostUrl;
 export function authorId(href, base) {
@@ -62,24 +63,30 @@ export class FacebookCommentsBrowser {
     if (await identity.count() !== 1 || !await identity.isVisible()
       || await identity.getAttribute('aria-label') !== 'Comentar como ' + this.config.pageName) throw new Error('page_identity_changed');
   }
+  currentDocumentMatches(){
+    try{return !!this.current && postUrl(this.page.url(),this.c.ownerId)===this.current.shownUrl;}catch{return false;}
+  }
   async open(post) {
+    const shown=presentationUrl(post,this.c);
     let matches=false;
-    try { matches=this.current?.id===post.id && this.current?.commentId===post.commentId && fingerprint(postUrl(this.page.url(),this.c.ownerId))===post.id; } catch {}
+    try { matches=this.current?.id===post.id && this.current?.commentId===post.commentId && this.currentDocumentMatches(); } catch {}
     this.stage('abrir_publicacion');
-    if (!matches) await this.page.goto(post.sourceUrl || post.url,{waitUntil:'commit',timeout:60000});
+    if (!matches) await this.page.goto(shown,{waitUntil:'commit',timeout:60000});
     this.stage('esperar_interfaz_publicacion');
     // A visible SSR button can precede the document's deferred UI handlers.
     // Do not click it while the initial document is still loading.
     await this.page.waitForLoadState('domcontentloaded',{timeout:45000});
     await this.checkLogin();
-    if(fingerprint(postUrl(this.page.url(),this.c.ownerId))!==post.id)throw new Error('post_owner_changed');
+    if(postUrl(this.page.url(),this.c.ownerId)!==postUrl(shown,this.c.ownerId))throw new Error('post_owner_changed');
     this.stage('esperar_campo_comentar');
     await ensureCommentPanel(this.page,this.s,{stage:this.stage,
       pageName:this.config.pageName,log:info=>{if(process.env.SCALA_FACEBOOK_CLOUD==='1')console.log('SCALA_CLOUD_INTERFACE: '+JSON.stringify(info));}});
     await this.guard();
     const owners=this.scope().locator(this.s.postAuthor);
     if (await owners.count() !== 1 || authorId(await owners.getAttribute('href'),this.page.url()) !== this.c.ownerId
-      || fingerprint(postUrl(this.page.url(),this.c.ownerId)) !== post.id) throw new Error('post_owner_changed');
+      || fingerprint(postUrl(post.url,this.c.ownerId)) !== post.id) throw new Error('post_owner_changed');
+    const aliases=verifiedPostAliases({actualUrl:this.page.url(),targetUrl:post.url,shownUrl:shown,
+      links:await this.scope().evaluate(postLinksFromDom,this.s),ownerId:this.c.ownerId});
     this.stage('leer_publicacion');
     const captionMore=[];
     for(const button of await this.scope().getByRole('button',{name:'Ver más',exact:true}).all()) {
@@ -89,7 +96,7 @@ export class FacebookCommentsBrowser {
     if(captionMore.length===1)await captionMore[0].click({timeout:5000});
     const caption=normalize(await this.scope().evaluate(readPostCaption));
     const matchesProducts=this.catalog?.products.filter(product=>[product.title,...product.aliases].some(alias=>normalize(alias).length>=5 && caption.includes(normalize(alias)))) || [];
-    this.current={...post,productId:this.c.productByPost?.[post.url] || (matchesProducts.length===1 ? matchesProducts[0].id : null)};
+    this.current={...post,aliases,shownUrl:postUrl(shown,this.c.ownerId),productId:this.c.productByPost?.[post.url] || (matchesProducts.length===1 ? matchesProducts[0].id : null)};
     await selectCommentOrder(this.page,this.scope(),this.s,{stage:this.stage});
     await this.guard();
   }
@@ -98,7 +105,7 @@ export class FacebookCommentsBrowser {
     if (await more.count()===1 && await more.isVisible()) await more.click({timeout:5000});
     const raw=await row.evaluate(readCommentDom,this.s);
     const identity=commentIdentity(new URL(raw.href,this.page.url()).href,this.c.ownerId);
-    if (!this.current || fingerprint(identity.post) !== this.current.id || raw.isReply !== !!identity.parentId) throw new Error('comment_identity_unknown');
+    if (!this.current || !this.current.aliases?.includes(identity.post) || raw.isReply !== !!identity.parentId) throw new Error('comment_identity_unknown');
     const owner=authorId(raw.authorHref,this.page.url());
     return {postId:this.current.id,id:identity.id,parentId:identity.parentId,authorId:owner,authorName:raw.authorName,
       text:raw.text,at:parseSpanishFacebookTime(raw.time,this.c.timeZone),isOwn:owner===this.c.ownerId,
@@ -136,7 +143,7 @@ export class FacebookCommentsBrowser {
   }
   async comments() {
     await this.guard();
-    if (!this.current || fingerprint(postUrl(this.page.url(),this.c.ownerId)) !== this.current.id) throw new Error('post_owner_changed');
+    if (!this.current || !this.currentDocumentMatches()) throw new Error('post_owner_changed');
     const result=[];
     for (const row of await this.scope().locator(this.s.commentRows).all()) {
       if (!await row.isVisible()) continue;
@@ -186,3 +193,4 @@ export class FacebookCommentsBrowser {
     throw new Error('unconfirmed_comment');
   }
 }
+
