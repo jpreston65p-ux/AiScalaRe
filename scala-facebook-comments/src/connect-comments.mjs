@@ -34,7 +34,10 @@ try {
   console.log('No escribas tu contraseña ni códigos en la terminal o en el chat.');
   terminal=createInterface({input:process.stdin,output:process.stdout});
   await terminal.question('Cuando veas Scala Fe en el navegador, pulsa Enter para comprobar la conexión: ');
-  const connector=new FacebookCommentsBrowser(page,config,loaded.catalog,progress);
+  const profilePage=context.pages().find(candidate=>{
+    try {const url=new URL(candidate.url());return url.hostname==='www.facebook.com' && url.pathname==='/profile.php' && url.searchParams.get('id')===config.comments.ownerId;} catch{return false;}
+  }) || page;
+  const connector=new FacebookCommentsBrowser(profilePage,config,loaded.catalog,progress);
   await connector.verifyAccount();
   for (const value of config.comments.postUrls) {
     const url=facebookPostUrl(value,config.comments.ownerId);

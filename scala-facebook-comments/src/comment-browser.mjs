@@ -24,6 +24,15 @@ export function commentIdentity(href, ownerId) {
 export class FacebookCommentsBrowser {
   constructor(page, config, catalog=null,stage=()=>{}) { this.page=page;this.config=config;this.catalog=catalog;this.c=config.comments;this.s=this.c.selectors;this.current=null;this.stage=stage; }
   async verifyAccount() {
+    // A manually opened numeric profile plus the composer guard below
+    // verifies the same identity without a redundant /me/ request.
+    const current=new URL(facebookUrl(this.page.url()));
+    const currentId=current.searchParams.get('id') || /(?:^\/p\/[^/]+-|^\/people\/[^/]+\/)(\d+)\/?$/.exec(current.pathname)?.[1];
+    if(currentId===this.c.ownerId && (/^\/profile\.php$/.test(current.pathname) || /^\/(people|p)\//.test(current.pathname))) {
+      this.stage('comprobar_perfil_abierto');
+      await this.checkLogin();
+      return;
+    }
     this.stage('abrir_perfil');
     // Facebook can keep its document loading after the profile redirect.
     // Wait for navigation and the actual redirected identity instead.
