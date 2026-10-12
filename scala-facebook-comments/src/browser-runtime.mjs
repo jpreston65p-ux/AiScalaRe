@@ -1,5 +1,6 @@
 import {chromium,firefox} from 'playwright';
 import {verifyFirefoxSandbox} from './browser-sandbox.mjs';
+import {reduceCloudPlayback} from './cloud-playback.mjs';
 
 export function commentsBrowserName(){
   const name=process.env.SCALA_FACEBOOK_BROWSER || 'chromium';
@@ -31,6 +32,7 @@ export async function launchCommentsContext(profile,config,{headless=false}={}){
   const options={headless,acceptDownloads:false,timezoneId:config.comments.timeZone,locale:'es-BO'};
   const context=await (name==='firefox'?firefox.launchPersistentContext(profile,{...options,firefoxUserPrefs:firefoxProtection}):chromium.launchPersistentContext(profile,{...options,chromiumSandbox:true}));
   try{
+    if(process.env.SCALA_FACEBOOK_CLOUD==='1')await reduceCloudPlayback(context);
     if(name==='firefox'){
       const page=await context.newPage();
       await page.goto('data:text/html,'+encodeURIComponent('<!doctype html><title>SCALA</title><p>Comprobación del navegador de SCALA</p>'),{waitUntil:'domcontentloaded',timeout:30000});
