@@ -22,9 +22,10 @@ export function commentIdentity(href, ownerId) {
 // Only the normal, visible Facebook interface is used. A runtime login must
 // still happen in this program's browser; the ChatGPT session is independent.
 export class FacebookCommentsBrowser {
-  constructor(page, config, catalog=null) { this.page=page;this.config=config;this.catalog=catalog;this.c=config.comments;this.s=this.c.selectors;this.current=null; }
+  constructor(page, config, catalog=null,stage=()=>{}) { this.page=page;this.config=config;this.catalog=catalog;this.c=config.comments;this.s=this.c.selectors;this.current=null;this.stage=stage; }
   async verifyAccount() {
-    await this.page.goto('https://www.facebook.com/me/', {waitUntil:'domcontentloaded',timeout:30000});
+    this.stage('abrir_perfil');
+    await this.page.goto('https://www.facebook.com/me/', {waitUntil:'domcontentloaded',timeout:60000});
     await this.checkLogin();
     const url=new URL(facebookUrl(this.page.url()));
     const numeric=url.searchParams.get('id') || /(?:^\/p\/[^/]+-|^\/people\/[^/]+\/)(\d+)\/?$/.exec(url.pathname)?.[1];
@@ -46,12 +47,15 @@ export class FacebookCommentsBrowser {
   async open(post) {
     let matches=false;
     try { matches=this.current?.id===post.id && this.current?.commentId===post.commentId && fingerprint(postUrl(this.page.url(),this.c.ownerId))===post.id; } catch {}
-    if (!matches) await this.page.goto(post.sourceUrl || post.url,{waitUntil:'domcontentloaded',timeout:30000});
-    await this.page.locator(this.s.identity).waitFor({state:'visible',timeout:15000});
+    this.stage('abrir_publicacion');
+    if (!matches) await this.page.goto(post.sourceUrl || post.url,{waitUntil:'domcontentloaded',timeout:60000});
+    this.stage('esperar_campo_comentar');
+    await this.page.locator(this.s.identity).waitFor({state:'visible',timeout:45000});
     await this.guard();
     const owners=this.scope().locator(this.s.postAuthor);
     if (await owners.count() !== 1 || authorId(await owners.getAttribute('href'),this.page.url()) !== this.c.ownerId
       || fingerprint(postUrl(this.page.url(),this.c.ownerId)) !== post.id) throw new Error('post_owner_changed');
+    this.stage('leer_publicacion');
     const captionMore=[];
     for(const button of await this.scope().getByRole('button',{name:'Ver más',exact:true}).all()) {
       const isComment=await button.evaluate(el=>/^(Comentario|Respuesta) de /.test(el.closest('[role="article"]')?.getAttribute('aria-label') || ''));
@@ -63,8 +67,9 @@ export class FacebookCommentsBrowser {
     this.current={...post,productId:this.c.productByPost?.[post.url] || (matchesProducts.length===1 ? matchesProducts[0].id : null)};
     const relevant=this.scope().getByRole('button',{name:/^Más relevantes/});
     if (await relevant.count()===1) {
-      await relevant.click({timeout:5000});
-      await this.page.getByRole('menu',{name:'Orden de comentarios'}).getByText('Más recientes',{exact:true}).click({timeout:5000});
+      this.stage('ordenar_comentarios');
+      await relevant.click({timeout:15000});
+      await this.page.getByRole('menu',{name:'Orden de comentarios'}).getByText('Más recientes',{exact:true}).click({timeout:15000});
     }
   }
   async readRow(row) {

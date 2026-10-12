@@ -12,6 +12,8 @@ import {uploadSession} from './cloud-upload.mjs';
 
 process.umask(0o077);
 let context,terminal,store,lease,renew;
+let stage='inicio';
+const progress=value=>{stage=value;console.log('SCALA_PASO_CONEXION: '+value);};
 try {
   const args=process.argv.slice(2),cloud=args.includes('--nube');
   if(args.some(value=>value!=='--nube'))throw new Error('invalid_arguments');
@@ -32,18 +34,21 @@ try {
   console.log('No escribas tu contraseña ni códigos en la terminal o en el chat.');
   terminal=createInterface({input:process.stdin,output:process.stdout});
   await terminal.question('Cuando veas Scala Fe en el navegador, pulsa Enter para comprobar la conexión: ');
-  const connector=new FacebookCommentsBrowser(page,config,loaded.catalog);
+  const connector=new FacebookCommentsBrowser(page,config,loaded.catalog,progress);
   await connector.verifyAccount();
   for (const value of config.comments.postUrls) {
     const url=facebookPostUrl(value,config.comments.ownerId);
     await connector.open({id:fingerprint(url),url,sourceUrl:value===config.comments.postUrls[0]?config.comments.verificationUrl:undefined});
+    progress('leer_comentarios');
     await connector.comments();
   }
   const {FacebookCommentNotifications}=await import('./comment-notifications.mjs');
   const notifications=new FacebookCommentNotifications(await context.newPage(),config,store);
+  notifications.stage=progress;
   await notifications.open();
   // Do not baseline events here: activation starts with the runner, not login.
   if(cloud){
+    progress('enviar_sesion_a_railway');
     console.log('Cuenta y controles comprobados. Se conectará esta sesión propia del programa al servicio scala-facebook-comentarios de Railway.');
     const encoded=encodeSessionPacket({version:1,browser:'firefox',ownerId:config.comments.ownerId,createdAt:Date.now(),cookies:await context.cookies('https://www.facebook.com/')},config.comments.ownerId);
     uploadSession(encoded);
@@ -70,6 +75,7 @@ try {
   // Only known codes or the exception class, never raw browser errors/URLs,
   // cookies, usernames, credentials or session values.
   const known=[...Object.keys(messages),...Object.keys(details)];
+  console.log('SCALA_ETAPA_FALLIDA: '+stage);
   console.log('SCALA_ERROR_CONEXION: '+(known.includes(error.message)?error.message:({TimeoutError:'tiempo_de_espera_agotado',TypeError:'tipo_de_dato_inesperado',Error:'error_no_clasificado'}[error.name] || 'error_no_clasificado')));
   process.exitCode=78;
 }finally{

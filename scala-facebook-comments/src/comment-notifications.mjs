@@ -16,9 +16,12 @@ export function notificationTarget(href,ownerId) {
 export class FacebookCommentNotifications {
   constructor(page,config,store) { this.page=page;this.config=config;this.store=store;this.refreshedAt=0;this.initialized=store.meta('facebook-notifications-ready')==='1'; }
   async open() {
-    await this.page.goto('https://www.facebook.com/notifications/',{waitUntil:'domcontentloaded',timeout:30000});
-    await this.page.getByRole('heading',{name:'Notificaciones',exact:true}).waitFor({state:'visible',timeout:15000});
-    await this.page.locator('a[role="link"][href*="notif_id="]').first().waitFor({state:'visible',timeout:15000});
+    this.stage?.('abrir_avisos');
+    await this.page.goto('https://www.facebook.com/notifications/',{waitUntil:'domcontentloaded',timeout:60000});
+    this.stage?.('esperar_pantalla_avisos');
+    await this.page.getByRole('heading',{name:'Notificaciones',exact:true}).waitFor({state:'visible',timeout:45000});
+    this.stage?.('esperar_enlaces_avisos');
+    await this.page.locator('a[role="link"][href*="notif_id="]').first().waitFor({state:'visible',timeout:45000});
     this.refreshedAt=Date.now();
   }
   async collect() {
