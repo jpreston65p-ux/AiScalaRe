@@ -89,6 +89,13 @@ test('configuración calibrada acepta el modo de avisos con lectura cada 3 segun
   assert.throws(()=>validateConfig({...config,verifiedPage:true,allowSending:true,comments:{...config.comments,timeZone:''}}),/invalid_config/);
 });
 
+test('la comprobación inicial abre el comentario verificado y rechaza enlaces fuera de esa publicación o con datos de acceso',()=>{
+  const configured={...config,verifiedPage:true,allowSending:true};
+  const validated=validateConfig(configured);
+  assert.equal(new URL(validated.comments.verificationUrl).searchParams.get('comment_id'),'1113975274440060');
+  for(const verificationUrl of ['https://www.facebook.com/reel/999999999/?comment_id=111',config.comments.verificationUrl+'&access_token=valor_ficticio','https://example.invalid/?comment_id=111'])assert.throws(()=>validateConfig({...configured,comments:{...config.comments,verificationUrl}}));
+});
+
 test('la publicación identifica un producto sin utilizar textos de otros visitantes como configuración',()=>{
   const document=doc(`<section><h3>Scala Fe</h3><p>Conoce Gedeón, el valiente obediente.</p>${root()}<div role="textbox">Borrador privado</div></section>`);
   const caption=readPostCaption(document.querySelector('section'));

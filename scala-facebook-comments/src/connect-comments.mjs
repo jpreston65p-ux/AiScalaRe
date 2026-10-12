@@ -36,7 +36,7 @@ try {
   await connector.verifyAccount();
   for (const value of config.comments.postUrls) {
     const url=facebookPostUrl(value,config.comments.ownerId);
-    await connector.open({id:fingerprint(url),url});
+    await connector.open({id:fingerprint(url),url,sourceUrl:value===config.comments.postUrls[0]?config.comments.verificationUrl:undefined});
     await connector.comments();
   }
   const {FacebookCommentNotifications}=await import('./comment-notifications.mjs');

@@ -44,7 +44,14 @@ function validateCommentConfig(config) {
   const pageUrl = new URL(facebookUrl(config.pageUrl));
   if (!['facebook.com','www.facebook.com'].includes(pageUrl.hostname)
     || !(new RegExp('^/p/[^/]+-' + c.ownerId + '/$').test(pageUrl.pathname) || pageUrl.pathname === '/profile.php' && pageUrl.searchParams.get('id') === c.ownerId)) throw new Error('invalid_profile_url');
-  return { ...config, pageUrl: pageUrl.href, comments: { ...c, postUrls: c.postUrls.map(url => facebookPostUrl(url, c.ownerId)) } };
+  const postUrls=c.postUrls.map(url=>facebookPostUrl(url,c.ownerId));
+  if(c.verificationUrl){
+    const url=new URL(facebookUrl(c.verificationUrl));
+    if(facebookPostUrl(url.href,c.ownerId)!==postUrls[0] || !/^\d+$/.test(url.searchParams.get('comment_id') || '')
+      || url.searchParams.has('reply_comment_id') && !/^\d+$/.test(url.searchParams.get('reply_comment_id'))
+      || Array.from(url.searchParams.keys()).some(key=>!['comment_id','reply_comment_id'].includes(key)))throw new Error('invalid_config');
+  }
+  return { ...config, pageUrl: pageUrl.href, comments: { ...c, postUrls } };
 }
 export function loadConfig({ live = true } = {}) {
   const raw = JSON.parse(readFileSync(resolve(root, 'facebook.config.json'), 'utf8'));

@@ -26,5 +26,15 @@ for SCALA_FILE in facebook.config.json catalogo.json; do
   if [[ ! -e "$SCALA_DESTINATION/$SCALA_FILE" ]]; then cp -- "$SCALA_WORKDIR/source/$SCALA_FILE" "$SCALA_DESTINATION/$SCALA_FILE"; fi
 done
 cd -- "$SCALA_DESTINATION"
+source scripts/entorno.sh
+node - "$SCALA_WORKDIR/source/facebook.config.json" <<'NODE'
+const fs=require('node:fs');
+const defaults=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+const current=JSON.parse(fs.readFileSync('facebook.config.json','utf8'));
+if(current.comments?.ownerId===defaults.comments.ownerId && !current.comments.verificationUrl && current.comments.postUrls?.[0]===defaults.comments.postUrls[0]){
+  current.comments.verificationUrl=defaults.comments.verificationUrl;
+  fs.writeFileSync('facebook.config.json',JSON.stringify(current,null,2)+'\n',{mode:0o600});
+}
+NODE
 bash PREPARAR_SCALA_FACEBOOK.sh --nube
 bash CONECTAR_SCALA_FACEBOOK.sh --nube

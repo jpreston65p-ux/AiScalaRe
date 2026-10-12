@@ -14,6 +14,7 @@
     "timeZone": "America/La_Paz",
     "notificationRefreshSeconds": 5,
     "maxCommentAgeSeconds": 86400,
+    "verificationUrl": "https://www.facebook.com/reel/1079349435002481?comment_id=1113975274440060&reply_comment_id=1433778465371696",
     "postUrls": [
       "https://www.facebook.com/reel/1079349435002481/"
     ],

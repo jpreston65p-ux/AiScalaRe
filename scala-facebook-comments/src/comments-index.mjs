@@ -40,7 +40,7 @@ try {
   await connector.verifyAccount();
   if(cloud){
     // Validate the observed account and owned controls, never a caller flag.
-    for(const url of config.comments.postUrls){const {fingerprint}=await import('./browser.mjs');await connector.open({id:fingerprint(url),url});await connector.comments();}
+    for(const url of config.comments.postUrls){const {fingerprint}=await import('./browser.mjs');await connector.open({id:fingerprint(url),url,sourceUrl:url===config.comments.postUrls[0]?config.comments.verificationUrl:undefined});await connector.comments();}
     store.setMeta('facebook-cloud-session-digest',digest);
   }
   const notifications=new FacebookCommentNotifications(await context.newPage(),config,store);

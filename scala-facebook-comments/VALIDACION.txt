@@ -1,7 +1,7 @@
 SCALA Facebook — versión 0.3 — 11 de octubre de 2026 (Bolivia)
 
 CÓDIGO
-52 pruebas aprobadas: 28 comentarios, 6 nube/aislamiento, 18 chat anterior.
+53 pruebas aprobadas: 29 comentarios, 6 nube/aislamiento, 18 chat anterior.
 28 módulos JavaScript y 8 scripts con sintaxis válida.
 Deduplicación, primer comentario en posts nuevos/antiguos, fechas españolas,
 emojis, respuestas hermanas, avisos agrupados y pendientes persistentes.
@@ -24,6 +24,8 @@ Chromium no pudo arrancar con aislamiento en el contenedor.
 Firefox sí ejecutó una página de prueba con seccomp, NoNewPrivs y filtros
 propios adicionales del contenido, sin desactivar el aislamiento.
 Despliegue de prueba SUCCESS: 8df65bf7-a88e-424f-8cf5-2b055c0561c1.
+Runtime 0.3 desplegado SUCCESS: 86fb4ab3-99ee-4e2d-a8e4-197460e9601a.
+Se observaron SCALA_CLOUD_BROWSER_OK y SCALA_CLOUD_WAITING_LOGIN.
 La sesión del bot aún está pendiente. Las respuestas están desactivadas.
 La web y el servicio de WhatsApp no se modificaron.
 
