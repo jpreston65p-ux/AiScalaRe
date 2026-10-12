@@ -1,8 +1,10 @@
 # SCALA · Comentarios de Facebook en la nube gratuita
 
-Asistente de comentarios para una **Página nueva y administrable de Facebook llamada Scala Fe**. Recibe los avisos oficiales de Meta en Cloudflare Workers Free, conserva estados en D1 y usa Cloudflare Queues para atender cada aviso. El servicio no depende de una terminal ni de que el PC esté encendido.
+Asistente de comentarios para una **Página nueva y administrable de Facebook llamada Scala Fe - SCALA**. Recibe los avisos oficiales de Meta en Cloudflare Workers Free, conserva estados en D1 y usa Cloudflare Queues para atender cada aviso. El servicio no depende de una terminal ni de que el PC esté encendido.
 
-**Estado del proyecto:** código preparado para despliegue; Página, alojamiento y credenciales pendientes de vinculación. Las pruebas locales utilizan datos ficticios y no demuestran una respuesta real en Facebook. La configuración inicial mantiene las respuestas desactivadas.
+**Estado del proyecto:** Página Scala Fe - SCALA creada el 12 de octubre de 2026; alojamiento y credenciales pendientes de vinculación. Facebook rechazó el nombre exacto Scala Fe por considerarlo duplicado; la nueva Página conserva la marca con el sufijo SCALA. Las pruebas locales utilizan datos ficticios y no demuestran una respuesta real en Facebook. La configuración inicial mantiene las respuestas desactivadas.
+
+Página creada: https://www.facebook.com/profile.php?id=61595400568225 . Meta Business Suite muestra el activo de Página `1369521966245025` y permite administrarla; ese es el ID configurado para Graph. El identificador del perfil mostrado en la URL y el ID del activo de Página son distintos. La conexión comprueba que el token devuelva exactamente el ID de Página configurado antes de habilitar respuestas.
 
 ## Mensaje
 
@@ -30,7 +32,7 @@ El código limita los intentos a 100 al día por Página y tres por autor, con c
 
 ## Preparación de Meta
 
-1. Crear la Página nueva Scala Fe desde una cuenta administradora. La creación implica aceptar las políticas que Facebook muestra; confirmar ese paso antes de finalizarlo.
+1. Crear la Página nueva Scala Fe - SCALA desde una cuenta administradora. La creación implica aceptar las políticas que Facebook muestra; confirmar ese paso antes de finalizarlo.
 2. Obtener el ID **real de la Página nueva**. No usar el ID del perfil profesional antiguo.
 3. Configurar la app SCALA `1175553238884267` y obtener un token de tipo **PAGE** para esa misma Página. Permisos necesarios: `pages_manage_engagement`, `pages_manage_metadata`, `pages_read_engagement` y `pages_read_user_content`.
 4. Completar los requisitos de acceso, revisión, publicación y verificación que Meta muestre para esta app y estos permisos. Un token válido o una prueba con un administrador no demuestra atención al público general.

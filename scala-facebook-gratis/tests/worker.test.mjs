@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {APP_ID,REPLY,SCOPES,config,digest,hmac,signatureValid,eventsFrom,authorize,confirmed,Graph,GraphError,Store,processJob,createWorker} from '../src/index.mjs';
+import {APP_ID,PAGE_NAME,REPLY,SCOPES,config,digest,hmac,signatureValid,eventsFrom,authorize,confirmed,Graph,GraphError,Store,processJob,createWorker} from '../src/index.mjs';
 
 const PAGE='222222222222222',AUTHOR='333333333333333',POST=PAGE+'_444444444444444',COMMENT='555555555555555',REPLY_ID='666666666666666';
 const NOW=Date.parse('2026-10-12T21:00:00Z');
@@ -172,7 +172,7 @@ test('el flujo HTTP firmado, D1, cola, Graph y comprobación final produce una s
     const path=url.pathname.replace(/^\/v26\.0\//,'');
     if(path===APP_ID)return Response.json({id:APP_ID,name:'SCALA Comentarios'});
     if(path==='debug_token')return Response.json({data:{is_valid:true,app_id:APP_ID,type:'PAGE',scopes:SCOPES}});
-    if(path==='me')return Response.json({id:PAGE,name:'Scala Fe'});
+    if(path==='me')return Response.json({id:PAGE,name:PAGE_NAME});
     if(path===APP_ID+'/subscriptions'){
       if(options.method==='POST'){
         assert.equal(options.body.get('callback_url'),env.SCALA_PUBLIC_ORIGIN+'/webhook');

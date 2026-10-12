@@ -4,7 +4,7 @@ compatibility_date = "2026-10-12"
 workers_dev = true
 
 [vars]
-SCALA_PAGE_ID = ""
+SCALA_PAGE_ID = "1369521966245025"
 SCALA_PUBLIC_ORIGIN = ""
 SCALA_ENABLE = "0"
 
