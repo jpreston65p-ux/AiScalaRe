@@ -19,6 +19,16 @@ export function panelClickReason(error){
   return error?.name==='TimeoutError' ? 'timeout' : 'unavailable';
 }
 
+export function panelControlGeometry(element){
+  const rect=element.getBoundingClientRect(),x=rect.x+rect.width/2,y=rect.y+rect.height/2;
+  const inViewport=rect.width>0 && rect.height>0 && x>=0 && y>=0 && x<innerWidth && y<innerHeight;
+  const hit=inViewport ? document.elementFromPoint(x,y) : null;
+  return {tag:element.tagName,role:element.getAttribute('role'),inViewport,
+    withinDialog:!!element.closest('[role="dialog"]'),blocked:!!hit && !element.contains(hit),
+    reachable:!!hit && element.contains(hit),
+    blockerTag:hit?.tagName || null,blockerRole:hit?.getAttribute('role') || null};
+}
+
 async function visible(locator){
   const result=[];
   for(const item of await locator.all())if(await item.isVisible())result.push(item);
@@ -51,13 +61,23 @@ export async function ensureCommentPanel(page,selectors,{stage=()=>{},log=()=>{}
   },pageName);
   // Counts only: no editor labels, customer content, URLs or credentials.
   log({expectedComposer:ui.expected.length,visibleEditors:ui.editors.length,commentControls:ui.controls.length});
-  let action='wait',control;
+  let action='wait',control,candidates=[];
   try{
-    if(!ui.editors.length && ui.controls.length===1){
-      action='open';control=ui.controls[0];
+    if(!ui.editors.length && ui.controls.length){
+      const reachable=[];
+      for(const button of ui.controls){
+        const geometry=await button.evaluate(panelControlGeometry);candidates.push(geometry);
+        if(geometry.reachable)reachable.push(button);
+      }
+      // A reel carousel can retain off-screen/covered controls in its DOM.
+      // Only one control that receives a pointer in the current view qualifies.
+      if(reachable.length===1)control=reachable[0];
+      else if(ui.controls.length===1 && !reachable.length)control=ui.controls[0];
+      else throw new Error('selectors_not_calibrated');
+      action='open';
       stage('abrir_panel_comentarios');
       await control.click({timeout:15000});
-    }else if(!ui.editors.length && ui.controls.length>1)throw new Error('selectors_not_calibrated');
+    }
     // Never click a generic Comentar control if any draft/editor is visible.
     action='wait';stage('esperar_campo_comentar');
     await identity.waitFor({state:'visible',timeout:Math.max(1,timeout-(Date.now()-started))});
@@ -65,17 +85,10 @@ export async function ensureCommentPanel(page,selectors,{stage=()=>{},log=()=>{}
   catch(error){
     let editors=[],geometry=null;
     try{if(page.evaluate)editors=await inventory();}catch{}
-    try{if(control)geometry=await control.evaluate(element=>{
-      const rect=element.getBoundingClientRect(),x=rect.x+rect.width/2,y=rect.y+rect.height/2;
-      const inViewport=x>=0 && y>=0 && x<innerWidth && y<innerHeight;
-      const hit=inViewport ? document.elementFromPoint(x,y) : null;
-      return {tag:element.tagName,role:element.getAttribute('role'),inViewport,
-        withinDialog:!!element.closest('[role="dialog"]'),blocked:!!hit && !element.contains(hit) && !hit.contains(element),
-        blockerTag:hit?.tagName || null,blockerRole:hit?.getAttribute('role') || null};
-    });}catch{}
+    try{if(control)geometry=await control.evaluate(panelControlGeometry);}catch{}
     try{ui=await find();}catch{}
     log({expectedComposer:ui.expected.length,visibleEditors:ui.editors.length,commentControls:ui.controls.length,
-      action,reason:panelClickReason(error),editors,geometry});
+      action,reason:panelClickReason(error),editors,geometry,candidates});
     throw error;
   }
 }
