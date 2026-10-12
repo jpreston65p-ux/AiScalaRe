@@ -32,6 +32,8 @@ const messages={
   comment_identity_unknown:'No se pudo identificar el enlace del comentario.',
   comment_author_unknown:'No se pudo verificar el autor del comentario.',
   replies_not_loaded:'Facebook no terminó de cargar las respuestas.',
+  comment_order_not_available:'No se reconocieron las opciones del menú. En Firefox elige Más recientes o Todos los comentarios y después pulsa Enter para reintentar.',
+  comment_order_unconfirmed:'Facebook no confirmó el cambio del filtro de comentarios. Selecciona Más recientes o Todos los comentarios en su menú y reintenta.',
   non_root_linux_required:'Ejecuta la conexión como farm, sin sudo.'
 };
 

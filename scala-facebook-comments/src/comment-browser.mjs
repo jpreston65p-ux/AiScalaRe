@@ -4,6 +4,7 @@ import { sameText } from './processor.mjs';
 import { readCommentDom, parseSpanishFacebookTime, commentThreadDepth, readPostCaption } from './comment-dom.mjs';
 import { normalize } from './catalog.mjs';
 import {facebookProfileId} from './connection-flow.mjs';
+import {selectCommentOrder} from './comment-order.mjs';
 
 export const postUrl = facebookPostUrl;
 export function authorId(href, base) {
@@ -74,12 +75,8 @@ export class FacebookCommentsBrowser {
     const caption=normalize(await this.scope().evaluate(readPostCaption));
     const matchesProducts=this.catalog?.products.filter(product=>[product.title,...product.aliases].some(alias=>normalize(alias).length>=5 && caption.includes(normalize(alias)))) || [];
     this.current={...post,productId:this.c.productByPost?.[post.url] || (matchesProducts.length===1 ? matchesProducts[0].id : null)};
-    const relevant=this.scope().getByRole('button',{name:/^Más relevantes/});
-    if (await relevant.count()===1) {
-      this.stage('ordenar_comentarios');
-      await relevant.click({timeout:15000});
-      await this.page.getByRole('menu',{name:'Orden de comentarios'}).getByText('Más recientes',{exact:true}).click({timeout:15000});
-    }
+    await selectCommentOrder(this.page,this.scope(),this.s,{stage:this.stage});
+    await this.guard();
   }
   async readRow(row) {
     const more=row.getByRole('button',{name:'Ver más',exact:true});

@@ -13,7 +13,7 @@ import {uploadSession} from './cloud-upload.mjs';
 import {facebookProfileId,connectionErrorInfo,connectionPageState,waitForConnection} from './connection-flow.mjs';
 
 process.umask(0o077);
-let context,terminal,store,lease,renew,profilePage,workPage,noticesPage,diagnosticPath;
+let context,terminal,store,lease,renew,profilePage,workPage,commentConnector,noticesPage,diagnosticPath;
 let stage='inicio',browserClosed=true,closing=false,ownerId;
 const cancel=new AbortController();
 const interrupt=()=>{
@@ -55,7 +55,7 @@ try {
       if(context && !browserClosed)return;
       progress('iniciar_firefox');
       context=await launchCommentsContext(profile,config,{headless:false});
-      browserClosed=false;workPage=null;noticesPage=null;
+      browserClosed=false;workPage=null;commentConnector=null;noticesPage=null;
       context.on('close',()=>{
         browserClosed=true;
         if(!closing)console.log('SCALA_NAVEGADOR_CERRADO: Firefox se cerró. Pulsa Enter para abrirlo de nuevo; SALIR para terminar.');
@@ -77,8 +77,9 @@ try {
       if(!profilePage)throw new Error('browser_closed');
       await new FacebookCommentsBrowser(profilePage,config,loaded.catalog,progress).verifyAccount({navigate:false});
       // Keep the login/profile tab available, even if a later check fails.
-      if(!workPage || workPage.isClosed())workPage=await context.newPage();
-      const connector=new FacebookCommentsBrowser(workPage,config,loaded.catalog,progress);
+      if(!workPage || workPage.isClosed()){workPage=await context.newPage();commentConnector=null;}
+      commentConnector ||= new FacebookCommentsBrowser(workPage,config,loaded.catalog,progress);
+      const connector=commentConnector;
       for(const value of config.comments.postUrls){
         const url=facebookPostUrl(value,ownerId);
         await connector.open({id:fingerprint(url),url,sourceUrl:value===config.comments.postUrls[0]?config.comments.verificationUrl:undefined});
