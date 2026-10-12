@@ -20,7 +20,7 @@ export function commentEvents(payload,{since,now=Date.now()}={}){
     for(const change of entry.changes){
       const v=change?.value;
       if(change.field!=='feed' || v?.item!=='comment' || v.verb!=='add'
-        || !objectId(v.comment_id) || !objectId(v.post_id) || v.parent_id!==v.post_id
+        || !objectId(v.comment_id) || !objectId(v.post_id) || v.parent_id!=null && v.parent_id!==v.post_id
         || typeof v.message!=='string' || !v.message.trim() || v.message.length>30000
         || !/^\d{5,30}$/.test(v.from?.id || '') || v.from.id===PAGE_ID)continue;
       const at=Number(v.created_time)*1000;

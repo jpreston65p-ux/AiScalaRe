@@ -92,14 +92,15 @@ export function createApp({store,origin,graphFactory=config=>new Graph(config),l
     }catch(error){return json(response,error.message==='body_too_large'?413:400,{error:'solicitud_no_valida'});}
   });
   const tick=async()=>{
-    if(!ready || busy || closing || configuring)return;
+    if(busy || closing)return;
+    store.cleanup();
+    if(!ready || configuring)return;
     busy=true;
     try{
       const job=store.next();if(job)await processJob(job,{store,graph,since:Number(store.get('active_since')),log:event=>{
         log('SCALA_'+event);
         if(event==='META_REPLY_CONFIRMED')lastReply=Date.now();
       }});
-      store.cleanup();
     }catch{ready=false;state='conexion_meta_pendiente';log('SCALA_META_CONNECTION_REQUIRED: Revisa los permisos o la vigencia de la conexión.');}
     finally{busy=false;}
   };

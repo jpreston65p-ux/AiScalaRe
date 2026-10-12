@@ -28,6 +28,7 @@ test('solo una firma HMAC exacta valida el cuerpo original',()=>{
 
 test('solo los comentarios nuevos de primer nivel de la Página autorizada llegan a la cola',()=>{
   assert.equal(commentEvents(packet(),{since,now}).length,1);
+  assert.equal(commentEvents(packet({...event(),parent_id:undefined}),{since,now}).length,1);
   for(const change of [{item:'post'},{verb:'edited'},{parent_id:'9999999999'},{from:{id:PAGE_ID}},{message:''},
     {created_time:Math.floor((since-10000)/1000)},{created_time:Math.floor((now+120000)/1000)},
     {post_id:'https://ejemplo.invalid'},{comment_id:'../me'}, {from:null}])
