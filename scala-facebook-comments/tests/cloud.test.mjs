@@ -4,11 +4,21 @@ import {cloudTarget,encodeSessionPacket,decodeSessionPacket} from '../src/cloud-
 import {uploadSession} from '../src/cloud-upload.mjs';
 import {sandboxProcess,protectedFirefoxContent} from '../src/browser-sandbox.mjs';
 import {cloudBrowserHeadless} from '../src/browser-runtime.mjs';
-import {memoryCounters} from '../src/cloud-resources.mjs';
+import {memoryCounters,processMemoryCounters} from '../src/cloud-resources.mjs';
 
 test('el diagnóstico de memoria solo conserva contadores del kernel permitidos',()=>{
   const info=memoryCounters('anon 200\nfile 300\nshmem 10\nclave_privada FICTICIA\nkernel NaN\n','max 5\noom 1\noom_kill 0\nsecreto 99\n');
   assert.deepEqual(info,{bytes:{anon:200,file:300,shmem:10},events:{max:5,oom:1,oom_kill:0}});
+});
+
+test('la memoria por proceso excluye otros servicios y no revela nombres ni campos ajenos',()=>{
+  const status=(pid,parent,uid,name,resident,anonymous)=>`Name:\t${name}\nPid:\t${pid}\nPPid:\t${parent}\nUid:\t${uid}\t${uid}\t${uid}\t${uid}\nVmRSS:\t${resident} kB\nRssAnon:\t${anonymous} kB\nDatoPrivado:\tFICTICIO\n`;
+  const result=processMemoryCounters([status(10,1,1000,'node',100,80),status(11,10,1000,'firefox',200,150),
+    status(12,11,1000,'Isolated Web Co',300,250),status(13,11,1000,'NOMBRE_NO_PERMITIDO',50,30),
+    status(14,1,1000,'node',900,900),status(15,11,2000,'firefox',800,800)],10,1000);
+  assert.deepEqual(result,{node:{count:1,resident:102400,anonymous:81920},firefox:{count:1,resident:204800,anonymous:153600},
+    content:{count:1,resident:307200,anonymous:256000},other:{count:1,resident:51200,anonymous:30720}});
+  assert.doesNotMatch(JSON.stringify(result),/FICTICIO|NOMBRE_NO_PERMITIDO/);
 });
 
 test('el servidor respeta la pantalla virtual y rechaza modos de navegador desconocidos',()=>{
@@ -69,3 +79,4 @@ test('la lectura del estado del kernel distingue usuario efectivo, filtros y pri
   assert.equal(parsed.uid,1000);assert.equal(parsed.filters,2);assert.equal(parsed.noNewPrivileges,1);
   assert.equal(protectedFirefoxContent([parent,browser,parsed],100,1000).length,1);
 });
+

@@ -20,6 +20,12 @@ export const firefoxProtection={
   'dom.filesystem.pathcheck.disabled':false,
   'dom.file.createInChild':false,
   'fission.webContentIsolationStrategy':1,
+  // Playwright normally reserves a very large process pool. This application
+  // has one context, one locale and one active tab: reuse same-site processes
+  // while retaining Fission's separate process pools for different sites.
+  'dom.ipc.processCount':1,
+  'dom.ipc.processCount.webIsolated':1,
+  'dom.ipc.processPrelaunch.enabled':false,
   'browser.sessionhistory.max_total_viewers':0,
   'browser.safebrowsing.malware.enabled':true,
   'browser.safebrowsing.phishing.enabled':true,
