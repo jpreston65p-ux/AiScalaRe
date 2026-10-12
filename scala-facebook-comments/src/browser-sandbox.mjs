@@ -20,7 +20,7 @@ export function protectedFirefoxContent(processes,parentPid,uid){
 // existing seccomp filter. No cookies, environment or browser internals read.
 export async function verifyFirefoxSandbox(){
   if(process.platform!=='linux' || process.getuid?.()===0)throw new Error('non_root_linux_required');
-  const until=Date.now()+5000;
+  const until=Date.now()+20000;
   do{
     const processes=[];
     for(const id of readdirSync('/proc').filter(name=>/^\d+$/.test(name))){try{processes.push(sandboxProcess(readFileSync('/proc/'+id+'/status','utf8')));}catch{}}
@@ -28,5 +28,10 @@ export async function verifyFirefoxSandbox(){
     if(children.length)return {contentProcesses:children.length,seccomp:true,noNewPrivileges:true,extraContentFilters:true};
     await new Promise(resolve=>setTimeout(resolve,200));
   }while(Date.now()<until);
+  const processes=[];
+  for(const id of readdirSync('/proc').filter(name=>/^\d+$/.test(name))){try{processes.push(sandboxProcess(readFileSync('/proc/'+id+'/status','utf8')));}catch{}}
+  const own=new Set([process.pid]);
+  for(let changed=true;changed;){changed=false;for(const item of processes)if(own.has(item.parent) && !own.has(item.pid)){own.add(item.pid);changed=true;}}
+  console.log('SCALA_DIAGNOSTICO_AISLAMIENTO: '+JSON.stringify(processes.filter(item=>own.has(item.pid) && item.uid===process.getuid()).map(({name,seccomp,filters,noNewPrivileges})=>({name,seccomp,filters,noNewPrivileges}))));
   throw new Error('firefox_content_sandbox_unverified');
 }

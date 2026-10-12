@@ -26,9 +26,10 @@ export async function launchCommentsContext(profile,config,{headless=false}={}){
   const context=await (name==='firefox'?firefox.launchPersistentContext(profile,{...options,firefoxUserPrefs:firefoxProtection}):chromium.launchPersistentContext(profile,{...options,chromiumSandbox:true}));
   try{
     if(name==='firefox'){
-      const page=context.pages()[0] || await context.newPage();
-      await page.setContent('<!doctype html><title>SCALA</title><p>Comprobación del navegador de SCALA</p>');
+      const page=await context.newPage();
+      await page.goto('data:text/html,'+encodeURIComponent('<!doctype html><title>SCALA</title><p>Comprobación del navegador de SCALA</p>'),{waitUntil:'domcontentloaded',timeout:30000});
       await verifyFirefoxSandbox();
+      await page.close();
     }
     return context;
   }catch(error){await context.close();throw error;}

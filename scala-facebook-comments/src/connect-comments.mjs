@@ -65,7 +65,12 @@ try {
     page_identity_changed:'La cuenta abierta no coincide con Scala Fe. No se activaron envíos.',
     post_owner_changed:'No se pudo verificar la publicación de Scala Fe.',
     selectors_not_calibrated:'Facebook muestra controles distintos a los verificados. No se activaron envíos.'};
-  console.log(messages[error.message] || 'No se completó la conexión. La configuración de envíos no se modificó.');
+  const details={notification_view_changed:'No se pudo verificar la pantalla de avisos.',unreliable_timestamp:'Facebook mostró una fecha distinta del formato esperado.',comment_identity_unknown:'No se pudo identificar el enlace del comentario.',comment_author_unknown:'No se pudo verificar el autor del comentario.',replies_not_loaded:'Facebook no terminó de cargar las respuestas.',non_root_linux_required:'Ejecuta la conexión como farm, sin sudo.'};
+  console.log(messages[error.message] || details[error.message] || 'No se completó la conexión. La configuración de envíos no se modificó.');
+  // Only known codes or the exception class, never raw browser errors/URLs,
+  // cookies, usernames, credentials or session values.
+  const known=[...Object.keys(messages),...Object.keys(details)];
+  console.log('SCALA_ERROR_CONEXION: '+(known.includes(error.message)?error.message:({TimeoutError:'tiempo_de_espera_agotado',TypeError:'tipo_de_dato_inesperado',Error:'error_no_clasificado'}[error.name] || 'error_no_clasificado')));
   process.exitCode=78;
 }finally{
   clearInterval(renew);terminal?.close();
