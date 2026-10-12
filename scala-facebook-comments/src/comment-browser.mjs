@@ -25,7 +25,11 @@ export class FacebookCommentsBrowser {
   constructor(page, config, catalog=null,stage=()=>{}) { this.page=page;this.config=config;this.catalog=catalog;this.c=config.comments;this.s=this.c.selectors;this.current=null;this.stage=stage; }
   async verifyAccount() {
     this.stage('abrir_perfil');
-    await this.page.goto('https://www.facebook.com/me/', {waitUntil:'domcontentloaded',timeout:60000});
+    // Facebook can keep its document loading after the profile redirect.
+    // Wait for navigation and the actual redirected identity instead.
+    await this.page.goto('https://www.facebook.com/me/', {waitUntil:'commit',timeout:60000});
+    this.stage('esperar_identidad_perfil');
+    await this.page.waitForURL(url=>url.hostname==='www.facebook.com' && !/^\/me\/?$/.test(url.pathname), {waitUntil:'commit',timeout:60000});
     await this.checkLogin();
     const url=new URL(facebookUrl(this.page.url()));
     const numeric=url.searchParams.get('id') || /(?:^\/p\/[^/]+-|^\/people\/[^/]+\/)(\d+)\/?$/.exec(url.pathname)?.[1];
