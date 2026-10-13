@@ -1,13 +1,17 @@
 // SCALA: official Page webhooks and verified comment replies.
 // No browser sessions, files, payment claims or customer message storage.
 export const APP_ID='1175553238884267';
-export const PAGE_NAME='Scala Fe - SCALA';
+export const PAGE_NAME='Scala Kids';
 export const GRAPH_VERSION='v26.0';
 export const REPLY='¡Hola! 😊 Soy el asistente virtual de SCALA.\n\nSi quieres saber más sobre el producto, escríbenos por WhatsApp 💙.';
 export const SCOPES=['pages_manage_engagement','pages_manage_metadata','pages_read_engagement','pages_read_user_content'];
 const EXCLUDED_PAGES=new Set(['61576458508649','1121299691061284']);
 const DAY=86400000, encoder=new TextEncoder();
 const id=value=>typeof value==='string'&&/^\d{5,30}(?:_\d{5,30})?$/.test(value);
+const authorId=value=>typeof value==='string'&&/^\d{5,30}$/.test(value);
+// Meta can omit personal profile fields on public comments. This key denotes
+// a comment, never an inferred person; Page ownership remains mandatory.
+const anonymousAuthor=comment=>'comment:'+comment;
 const hex=bytes=>[...new Uint8Array(bytes)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
 export async function digest(value){return hex(await crypto.subtle.digest('SHA-256',encoder.encode(String(value))));}
 export async function hmac(secret,value){
@@ -28,17 +32,22 @@ export async function eventsFrom(payload,{page,since,now=Date.now()}={}){
     for(const change of entry.changes){
       const v=change?.value,at=Number(v?.created_time)*1000;
       if(change?.field!=='feed'||v?.item!=='comment'||v.verb!=='add'||!id(v.comment_id)||!id(v.post_id)
-        ||v.parent_id!=null&&v.parent_id!==v.post_id||!/^\d{5,30}$/.test(v.from?.id||'')||v.from.id===page
+        ||v.parent_id!=null&&!id(v.parent_id)||v.from?.id!=null&&!authorId(v.from.id)||v.from?.id===page
         ||typeof v.message!=='string'||!v.message.trim()||v.message.length>30000||!Number.isFinite(at)
         ||at<since||at>now+60000||now-at>DAY)continue;
-      result.push({id:v.comment_id,post:v.post_id,at,author:v.from.id,textHash:await digest(v.message)});
+      // Video callbacks may use a video ID as parent_id instead of post_id.
+      // Graph rechecks the actual parent before sending and rejects replies.
+      result.push({id:v.comment_id,post:v.post_id,at,author:v.from?.id??anonymousAuthor(v.comment_id),textHash:await digest(v.message)});
     }
   }
   return result;
 }
 export async function authorize(job,post,comment,{page,since,now=Date.now()}){
+  const author=comment?.from?.id;
   if(post?.id!==job.post||post.from?.id!==page||comment?.id!==job.id||comment.parent
-    ||comment.from?.id!==job.author||comment.from.id===page||comment.is_hidden||comment.is_private
+    ||!(authorId(job.author)||job.author===anonymousAuthor(job.id))
+    ||author===page||author!=null&&!authorId(author)
+    ||author!=null&&job.author!==anonymousAuthor(job.id)&&author!==job.author||comment.is_hidden||comment.is_private
     ||typeof comment.message!=='string'||!comment.message.trim()||await digest(comment.message)!==job.text_hash)return false;
   const at=Date.parse(comment.created_time);
   return Number.isFinite(at)&&Number.isFinite(since)&&at>=since&&at<=now+60000&&now-at<=DAY;
@@ -72,7 +81,9 @@ export class Graph{
       ||Number(d.expires_at)>0&&Number(d.expires_at)*1000<Date.now())throw new Error('invalid_page_token');
     for(const scope of d.granular_scopes||[])if(SCOPES.includes(scope.scope)&&Array.isArray(scope.target_ids)&&!scope.target_ids.includes(this.c.page))throw new Error('wrong_page');
     const page=await this.call('me',{params:{fields:'id,name'}});
-    if(page.id!==this.c.page||page.name?.trim()!==PAGE_NAME)throw new Error('wrong_page');
+    // The bound Page ID is the authorization boundary. A display-name change
+    // must not disable an already authorized Page or authorize another Page.
+    if(page.id!==this.c.page)throw new Error('wrong_page');
     return page;
   }
   async connect(){
@@ -90,6 +101,20 @@ export class Graph{
   }
   post(post){if(!id(post))throw new Error('invalid_object');return this.call(post,{params:{fields:'id,from{id}'}});}
   comment(comment){if(!id(comment))throw new Error('invalid_object');return this.call(comment,{params:{fields:'id,from{id},parent{id},message,created_time,is_hidden,is_private'}});}
+  async recover(postId,{since,now=Date.now()}={}){
+    if(!new RegExp('^'+this.c.page+'_\\d{5,30}$').test(postId||''))throw new Error('invalid_object');
+    const post=await this.post(postId);
+    if(post.id!==postId||post.from?.id!==this.c.page)throw new Error('wrong_page');
+    const body=await this.call(postId+'/comments',{params:{fields:'id,from{id},parent{id},message,created_time,is_hidden,is_private',limit:'50'}});
+    if(!Array.isArray(body.data))throw new Error('unknown_comments');
+    const jobs=[];
+    for(const comment of body.data){
+      if(!id(comment?.id)||typeof comment.message!=='string'||!comment.message.trim()||comment.message.length>30000)continue;
+      const job={id:comment.id,post:postId,at:Date.parse(comment.created_time),author:comment.from?.id??anonymousAuthor(comment.id),textHash:await digest(comment.message)};
+      if(await authorize({...job,text_hash:job.textHash},post,comment,{page:this.c.page,since,now}))jobs.push(job);
+    }
+    return jobs;
+  }
   async replies(comment){
     if(!id(comment))throw new Error('invalid_object');
     let after;const result=[];

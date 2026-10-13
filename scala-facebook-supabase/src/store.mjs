@@ -13,17 +13,28 @@ export class PgStore{
   }
   async get(key){return (await this.q('SELECT value FROM scala_fb_private.metadata WHERE page=$1 AND key=$2',this.page,key))[0]?.value??null;}
   async set(key,value){await this.q('INSERT INTO scala_fb_private.metadata VALUES($1,$2,$3) ON CONFLICT(page,key) DO UPDATE SET value=EXCLUDED.value',this.page,key,String(value));}
-  async enqueue(events){
+  async enqueue(events,{retrySkipped=false}={}){
     if(events.length>1000)throw new Error('queue_full');
     const page=this.page,now=this.now();
-    await this.sql.begin(async tx=>{
+    return this.sql.begin(async tx=>{
       await tx.unsafe('SELECT pg_advisory_xact_lock(hashtextextended($1,1))',[page]);
       const [{n}]=await tx.unsafe("SELECT count(*)::int n FROM scala_fb_private.jobs WHERE page=$1 AND status IN ('queued','sending','uncertain')",[page]);
       // Postgres.js serializes JSONB itself. A pre-stringified array becomes
       // a JSON string, causing PostgreSQL 22023 instead of an event array.
       const [{n:newCount}]=await tx.unsafe("SELECT count(*)::int n FROM (SELECT DISTINCT value->>'id' id FROM jsonb_array_elements($2::jsonb)) e WHERE NOT EXISTS(SELECT 1 FROM scala_fb_private.jobs j WHERE j.page=$1 AND j.id=e.id)",[page,tx.json(events)]);
-      if(n+newCount>1000)throw new Error('queue_full');
-      for(const e of events)await tx.unsafe("INSERT INTO scala_fb_private.jobs(page,id,post,at,author,text_hash,status,next_at) VALUES($1,$2,$3,$4,$5,$6,'queued',$7) ON CONFLICT(page,id) DO NOTHING",[page,e.id,e.post,e.at,e.author,e.textHash,now]);
+      const [{n:retryCount}]=retrySkipped?await tx.unsafe(`SELECT count(DISTINCT j.id)::int n FROM jsonb_array_elements($2::jsonb) e JOIN scala_fb_private.jobs j ON j.page=$1 AND j.id=e.value->>'id'
+        WHERE j.status='skipped' AND j.attempt_at IS NULL AND j.post=e.value->>'post' AND j.text_hash=e.value->>'textHash' AND j.at=(e.value->>'at')::bigint`,[page,tx.json(events)]):[{n:0}];
+      if(n+newCount+retryCount>1000)throw new Error('queue_full');
+      let queued=0;
+      for(const e of events){
+        const rows=await tx.unsafe(`INSERT INTO scala_fb_private.jobs(page,id,post,at,author,text_hash,status,next_at) VALUES($1,$2,$3,$4,$5,$6,'queued',$7)
+          ON CONFLICT(page,id) DO UPDATE SET status='queued',next_at=EXCLUDED.next_at
+          WHERE $8::boolean AND jobs.status='skipped' AND jobs.attempt_at IS NULL
+            AND jobs.post=EXCLUDED.post AND jobs.text_hash=EXCLUDED.text_hash AND jobs.at=EXCLUDED.at
+          RETURNING id`,[page,e.id,e.post,e.at,e.author,e.textHash,now,retrySkipped]);
+        queued+=rows.length;
+      }
+      return queued;
     });
   }
   async lock(){

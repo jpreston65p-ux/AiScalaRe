@@ -41,8 +41,11 @@ export function createService({store,fetchFn=fetch,now=Date.now,log=message=>con
   async function status(){
     try{
       const {keys,c}=await load(),connected=complete(keys)&&await ready(c),last=Number(await store.get('last_reply'))||null;
-      return {proyecto:'SCALA Facebook gratuito',alojamiento:'Supabase Free',pagina:PAGE_NAME,estado:!complete(keys)?'credenciales_meta_pendientes':!c.enabled?'pausado':connected?'conectada_para_pruebas':'conexion_meta_pendiente',
-        respuestasHabilitadas:connected,respuestaAutonomaVerificada:!!last,ultimaRespuestaConfirmada:last?new Date(last).toISOString():null,publicoGeneralVerificado:false};
+      // Recorded by the operator only after observing a confirmed reply to
+      // an account outside the app and business roles, on this bound Page.
+      const external=/^\d{5,30}(?:_\d{5,30})?$/.test(await store.get('external_verified_reply_id')||'');
+      return {proyecto:'SCALA Facebook gratuito',alojamiento:'Supabase Free',pagina:PAGE_NAME,estado:!complete(keys)?'credenciales_meta_pendientes':!c.enabled?'pausado':connected?(external?'activa':'conectada_para_pruebas'):'conexion_meta_pendiente',
+        respuestasHabilitadas:connected,respuestaAutonomaVerificada:!!last,ultimaRespuestaConfirmada:last?new Date(last).toISOString():null,publicoGeneralVerificado:external};
     }catch{return {proyecto:'SCALA Facebook gratuito',alojamiento:'Supabase Free',estado:'base_pendiente',respuestasHabilitadas:false,respuestaAutonomaVerificada:false,publicoGeneralVerificado:false};}
   }
   async function fetchRequest(request,ctx){
@@ -51,9 +54,17 @@ export function createService({store,fetchFn=fetch,now=Date.now,log=message=>con
     try{
       if(request.method==='GET'&&(path==='/'||path==='/health')){const s=await status();return path==='/'?text(statusText(s)):json(s);}
       if(request.method==='GET'&&['/privacidad','/eliminacion-datos'].includes(path))return text(privacyText());
-      if(path==='/wake'&&request.method==='POST'){
-        const supplied=request.headers.get('x-scala-wake'),{keys}=await load();
+      if(['/wake','/recover'].includes(path)&&request.method==='POST'){
+        const supplied=request.headers.get('x-scala-wake'),{keys,c}=await load();
         if(!/^[a-f\d]{64}$/.test(supplied||'')||!keys.wake_token||!await signatureValid(encoder.encode('scala-wake'),'sha256='+await hmac(supplied,'scala-wake'),keys.wake_token))return json({error:'no_autorizado'},403);
+        if(path==='/recover'){
+          if(Number(request.headers.get('content-length'))>1024)return json({error:'solicitud_no_valida'},400);
+          const body=await request.json();
+          if(!body||Object.keys(body).length!==1||!new RegExp('^'+PAGE_ID+'_\\d{5,30}$').test(body.post||''))return json({error:'solicitud_no_valida'},400);
+          if(!complete(keys)||!await ready(c))return json({error:'conexion_pendiente'},503);
+          const jobs=await new Graph(c,fetchFn).recover(body.post,{since:Number(await store.get('active_since')),now:now()});
+          const queued=await store.enqueue(jobs,{retrySkipped:true});wake(ctx);log('SCALA_COMMENTS_RECOVERED');return json({received:true,queued});
+        }
         wake(ctx);return json({received:true});
       }
       if(path!=='/webhook')return json({error:'no_encontrado'},404);
@@ -80,16 +91,16 @@ export function createService({store,fetchFn=fetch,now=Date.now,log=message=>con
   }
   return {fetch:fetchRequest,run,status};
 }
-function statusText(s){const labels={credenciales_meta_pendientes:'Falta vincular Facebook',pausado:'Respuestas pausadas',conectada_para_pruebas:'Conectada para pruebas',conexion_meta_pendiente:'Conexión con Meta pendiente',base_pendiente:'Base pendiente'};
+function statusText(s){const labels={credenciales_meta_pendientes:'Falta vincular Facebook',pausado:'Respuestas pausadas',conectada_para_pruebas:'Conectada para pruebas',activa:'Activa · respuesta externa verificada',conexion_meta_pendiente:'Conexión con Meta pendiente',base_pendiente:'Base pendiente'};
   return `SCALA · Asistente de comentarios 💙
 ${PAGE_NAME}
 
 ${labels[s.estado]||'Configuración pendiente'}
-${s.respuestasHabilitadas?'Las respuestas están habilitadas para comprobar la conexión.':'Todavía no se envían respuestas automáticas.'}
+${s.respuestasHabilitadas?'Las respuestas automáticas están habilitadas.':'Todavía no se envían respuestas automáticas.'}
 ${s.respuestaAutonomaVerificada?'Se observó una respuesta automática en Facebook.':'La conexión todavía necesita una prueba real en Facebook.'}
 
 El servicio está alojado en la nube. Cuando esté vinculado y activo podrá atender con tu PC apagada, dentro de los límites del plan gratuito.
-La atención al público requiere completar los requisitos de Meta y comprobarla con una persona ajena a los roles de prueba.
+${s.publicoGeneralVerificado?'Se comprobó una respuesta a una cuenta ajena a los roles de la app y del negocio, en esta Página.':'La atención al público necesita una prueba con una persona ajena a los roles de la app.'}
 
 Privacidad: ${BASE}/privacidad
 Eliminación de datos: ${BASE}/eliminacion-datos
@@ -97,11 +108,11 @@ Eliminación de datos: ${BASE}/eliminacion-datos
 }
 function privacyText(){return `Privacidad del asistente de SCALA
 
-Este asistente procesa avisos firmados de Meta sobre comentarios públicos de Scala Fe - SCALA. Conserva IDs, fechas, un hash del texto y estados de atención en una base privada de Supabase. No almacena textos ni nombres de clientes. Los registros se eliminan después de 30 días durante el mantenimiento del servicio activo.
+Este asistente procesa avisos firmados de Meta sobre comentarios públicos de ${PAGE_NAME}. Conserva IDs, fechas, un hash del texto y estados de atención en una base privada de Supabase. No almacena textos ni nombres de clientes. Los registros se eliminan después de 30 días durante el mantenimiento del servicio activo.
 
 Las bajas se conservan con un identificador criptográfico para respetarlas. Las claves de Meta se guardan cifradas en Supabase Vault. No utiliza cookies, sesiones del navegador ni contraseñas de Facebook. No confirma pagos ni entregas.
 
-Para solicitar eliminación o reanudación de atención, contacta al equipo de SCALA por la Página e indica el enlace del comentario. Esta página no registra automáticamente solicitudes. Escribir BAJA pausa respuestas al autor cuando el aviso correspondiente se recibe y procesa.
+Para solicitar eliminación o reanudación de atención, contacta al equipo de SCALA por la Página e indica el enlace del comentario. Esta página no registra automáticamente solicitudes. Cuando Meta facilita el identificador del autor, escribir BAJA pausa sus respuestas al procesar el aviso. Si Meta lo omite, no se responde al comentario BAJA y se conserva únicamente una referencia del comentario, sin deducir la identidad de la persona.
 
 SCALA, para una vida edificada.
 https://vitacala.online/
