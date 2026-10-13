@@ -47,6 +47,7 @@ export function createService({store,fetchFn=fetch,now=Date.now,log=message=>con
   }
   async function fetchRequest(request,ctx){
     const url=new URL(request.url),path=url.pathname.replace(new RegExp('^/(?:functions/v1/)?'+SLUG+'(?=/|$)'),'')||'/';
+    let stage='request';
     try{
       if(request.method==='GET'&&(path==='/'||path==='/health')){const s=await status();return path==='/'?text(statusText(s)):json(s);}
       if(request.method==='GET'&&['/privacidad','/eliminacion-datos'].includes(path))return text(privacyText());
@@ -68,14 +69,14 @@ export function createService({store,fetchFn=fetch,now=Date.now,log=message=>con
       if(!reader)return json({error:'solicitud_no_valida'},400);
       while(true){const {value,done}=await reader.read();if(done)break;length+=value.byteLength;if(length>262144){await reader.cancel();return json({error:'aviso_demasiado_grande'},413);}parts.push(value);}
       const body=new Uint8Array(length);let offset=0;for(const part of parts){body.set(part,offset);offset+=part.byteLength;}
-      const {keys,c}=await load();if(!keys.app_secret)return json({error:'credenciales_meta_pendientes'},503);
+      stage='credentials';const {keys,c}=await load();if(!keys.app_secret)return json({error:'credenciales_meta_pendientes'},503);
       if(!await signatureValid(body,signature,keys.app_secret))return json({error:'firma_rechazada'},403);
-      const payload=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(body));
+      stage='json';const payload=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(body));
       if(!c.enabled)return json({received:true,paused:true});
       if(!complete(keys)||!await ready(c)){wake(ctx);return json({error:'conexion_pendiente'},503);}
-      const events=await eventsFrom(payload,{page:PAGE_ID,since:Number(await store.get('active_since')),now:now()});
-      await store.enqueue(events);await store.set('last_webhook',now());wake(ctx);log('SCALA_SIGNED_WEBHOOK_RECEIVED');return json({received:true});
-    }catch{return json({error:'solicitud_o_conexion_pendiente'},503);}
+      stage='events';const events=await eventsFrom(payload,{page:PAGE_ID,since:Number(await store.get('active_since')),now:now()});
+      stage='enqueue';await store.enqueue(events);stage='metadata';await store.set('last_webhook',now());wake(ctx);log('SCALA_SIGNED_WEBHOOK_RECEIVED');return json({received:true});
+    }catch(e){const code=/^[A-Z0-9]{5}$/.test(e?.code||'')?e.code:'UNCLASSIFIED';log('SCALA_WEBHOOK_PENDING_'+stage+'_'+code);return json({error:'solicitud_o_conexion_pendiente'},503);}
   }
   return {fetch:fetchRequest,run,status};
 }
@@ -98,7 +99,7 @@ function privacyText(){return `Privacidad del asistente de SCALA
 
 Este asistente procesa avisos firmados de Meta sobre comentarios públicos de Scala Fe - SCALA. Conserva IDs, fechas, un hash del texto y estados de atención en una base privada de Supabase. No almacena textos ni nombres de clientes. Los registros se eliminan después de 30 días durante el mantenimiento del servicio activo.
 
-Las bajas se conservan con un identificador criptográfico para respetarlas. Las claves de Meta se guardarán cifradas en Supabase Vault al autorizar la vinculación. No utiliza cookies, sesiones del navegador ni contraseñas de Facebook. No confirma pagos ni entregas.
+Las bajas se conservan con un identificador criptográfico para respetarlas. Las claves de Meta se guardan cifradas en Supabase Vault. No utiliza cookies, sesiones del navegador ni contraseñas de Facebook. No confirma pagos ni entregas.
 
 Para solicitar eliminación o reanudación de atención, contacta al equipo de SCALA por la Página e indica el enlace del comentario. Esta página no registra automáticamente solicitudes. Escribir BAJA pausa respuestas al autor cuando el aviso correspondiente se recibe y procesa.
 
