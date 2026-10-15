@@ -120,4 +120,20 @@ body{overflow:hidden}
 @media(max-height:660px){.welcome-art{width:4rem}.welcome h1{font-size:1.6rem}.welcome p{font-size:.84rem}.topic{min-height:4.5rem}.ideas{margin-top:.5rem}.mode-help{display:none}.composer-helper{display:none}.footer{display:none}.workspace[data-chat=true] .welcome{display:none}}
 @media(max-width:400px){.ai-toolbar{gap:.3rem;padding:.4rem}.status-group{gap:.35rem}.status-pill{font-size:.65rem}.mini-button{font-size:.72rem}.topic-title{font-size:.87rem}}
 
+/* Keep the app's own surfaces behind SCALA's transparent navigation. */
+:root[data-scala-embed="true"] .sidebar{padding-top:calc(var(--scala-nav-height,0px) + 1.1rem)}
+:root[data-scala-embed="true"] .workspace{padding-top:calc(var(--scala-nav-height,0px) + 1.1rem)}
+:root[data-scala-embed="true"] .sidebar-toggle{top:calc(var(--scala-nav-height,0px) + .8rem)}
+:root[data-scala-embed="true"] .sidebar-close{top:calc(var(--scala-nav-height,0px) + .5rem)}
+:root[data-scala-embed="true"] .settings{inset-block-start:var(--scala-nav-height,0px);max-height:calc(100dvh - var(--scala-nav-height,0px) - 2rem)}
+@media(max-width:720px){
+  :root[data-scala-embed="true"] .sidebar,:root[data-scala-embed="true"] .workspace{padding-top:calc(var(--scala-nav-height,0px) + 1rem)}
+}
+:root[data-scala-embed-compact="true"] .welcome-art{width:4rem}
+:root[data-scala-embed-compact="true"] .welcome h1{font-size:1.6rem}
+:root[data-scala-embed-compact="true"] .welcome p{font-size:.84rem}
+:root[data-scala-embed-compact="true"] .topic{min-height:4.5rem}
+:root[data-scala-embed-compact="true"] .ideas{margin-top:.5rem}
+:root[data-scala-embed-compact="true"] .mode-help,:root[data-scala-embed-compact="true"] .composer-helper,:root[data-scala-embed-compact="true"] .footer,:root[data-scala-embed-compact="true"] .workspace[data-chat=true] .welcome{display:none}
+
 .scala-home-link{display:block;margin:.1rem .6rem .35rem;padding:.45rem .6rem;color:#724735;font-size:.83rem;text-decoration:none;border-radius:.6rem}.scala-home-link:hover{background:#f4e7d6}.privacy-note{margin:.22rem 0 0;text-align:center;font-size:.68rem;color:#806d5f}.ai-toolbar .status-group{min-width:0}
