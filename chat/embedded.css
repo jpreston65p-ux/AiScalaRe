@@ -1,0 +1,124 @@
+/* SCALA integration: the page stays visible through the wooden navigation. */
+:root[data-scala-embed="true"] .sidebar{
+  padding:calc(var(--scala-nav-height,0px) + 1.25rem) 1rem 1rem;
+  border:0;background:none;box-shadow:none;
+}
+:root[data-scala-embed="true"] .sidebar::after{
+  content:"";position:absolute;top:calc(var(--scala-nav-height,0px) + 1.25rem);
+  right:0;bottom:1.25rem;border-right:1px solid #e5d3be;pointer-events:none;
+}
+:root[data-scala-embed="true"] .sidebar .brand,
+:root[data-scala-embed="true"] .sidebar .scala-home-link,
+:root[data-scala-embed="true"] .history-art,
+:root[data-scala-embed="true"] .welcome .logo-stage,
+:root[data-scala-embed="true"] .welcome-intro,
+:root[data-scala-embed="true"] .mode-help,
+:root[data-scala-embed="true"] .footer{display:none}
+:root[data-scala-embed="true"] .new-conversation{margin:0 0 .9rem;min-height:2.75rem;flex-shrink:0}
+:root[data-scala-embed="true"] .sidebar-tabs{flex-shrink:0}
+:root[data-scala-embed="true"] .sidebar-empty{margin-top:.9rem;padding:1rem .3rem}
+:root[data-scala-embed="true"] .sidebar-empty h3{font:800 .95rem/1.4 Nunito,system-ui,sans-serif;letter-spacing:0}
+:root[data-scala-embed="true"] .sidebar-empty p{font-size:calc(.8rem * var(--reading-scale));line-height:1.5}
+:root[data-scala-embed="true"] .history-list{padding-top:.5rem}
+:root[data-scala-embed="true"] .workspace{
+  display:grid;grid-template-columns:minmax(0,1fr);
+  grid-template-rows:auto auto minmax(0,1fr) auto;gap:1rem;
+  align-items:stretch;justify-content:normal;
+  padding:calc(var(--scala-nav-height,0px) + 1.25rem) clamp(1rem,2.5vw,2.5rem) 1.25rem;
+}
+:root[data-scala-embed="true"] .welcome,
+:root[data-scala-embed="true"] .workspace[data-chat="true"] .welcome{
+  display:block;grid-area:1/1;align-self:center;max-width:none;text-align:left;animation:none;
+}
+:root[data-scala-embed="true"] .welcome h1,
+:root[data-scala-embed="true"] .workspace[data-chat="true"] .welcome h1{
+  margin:0;font:800 1.3rem/1.25 Nunito,system-ui,sans-serif;
+  letter-spacing:-.025em;text-shadow:none;text-wrap:normal;
+}
+:root[data-scala-embed="true"] .welcome p{margin:.25rem 0 0;font-size:.82rem;font-weight:400;letter-spacing:0;color:#80634f}
+:root[data-scala-embed="true"] .ai-toolbar{
+  grid-area:2/1;justify-content:space-between;align-self:center;
+  width:100%;max-width:none;margin:0;padding:0;border:0;background:none;border-radius:0;gap:.5rem;
+}
+:root[data-scala-embed="true"] .ai-toolbar label{font-size:.8rem}
+:root[data-scala-embed="true"] .ai-toolbar select{min-height:2.5rem;background:#fffcf6;border-color:#ddc7b2}
+:root[data-scala-embed="true"] .status-group{flex-wrap:wrap;justify-content:flex-end;gap:.3rem .6rem}
+:root[data-scala-embed="true"] .status-pill{font-size:.73rem}
+:root[data-scala-embed="true"] .ideas,
+:root[data-scala-embed="true"] .messages{
+  grid-area:3/1;justify-self:center;width:100%;min-height:0;margin:0;
+  overflow-y:auto;overscroll-behavior:contain;
+}
+:root[data-scala-embed="true"] .ideas{max-width:46rem;align-content:center;padding:.5rem .2rem}
+:root[data-scala-embed="true"] .ideas-heading::before,
+:root[data-scala-embed="true"] .ideas-heading::after{display:none}
+:root[data-scala-embed="true"] .ideas-heading h2{font:800 clamp(1.1rem,1.8vw,1.45rem)/1.35 Nunito,system-ui,sans-serif;letter-spacing:-.02em}
+:root[data-scala-embed="true"] .topics{gap:.75rem;margin:1.1rem 0 .2rem}
+:root[data-scala-embed="true"] .topic{
+  grid-template-columns:2.75rem minmax(0,1fr);gap:.8rem;
+  min-height:5.5rem;padding:.8rem 1rem;border:1px solid #e4cdb3;
+  border-radius:.85rem;background:#fff8eb;box-shadow:none;
+}
+:root[data-scala-embed="true"] .topic-peach{background:#fcf1e7;border-color:#e6cec0}
+:root[data-scala-embed="true"] .topic::after,
+:root[data-scala-embed="true"] .topic-arrow,
+:root[data-scala-embed="true"] .topic-illustration::before{display:none}
+:root[data-scala-embed="true"] .topic:hover{transform:translateY(-2px);border-color:#b78250;box-shadow:0 3px 10px #75492c0d}
+:root[data-scala-embed="true"] .topic-title{font:800 .96rem/1.3 Nunito,system-ui,sans-serif;letter-spacing:0}
+:root[data-scala-embed="true"] .topic-subtitle{font-size:calc(.77rem * var(--reading-scale));line-height:1.4}
+:root[data-scala-embed="true"] .messages{max-width:54rem;padding:.25rem .25rem 1rem}
+:root[data-scala-embed="true"] .composer-area,
+:root[data-scala-embed="true"] .workspace[data-chat="true"] .composer-area{
+  grid-area:4/1;justify-self:center;align-self:end;width:100%;max-width:54rem;min-width:0;margin:0;animation:none;
+}
+:root[data-scala-embed="true"] .composer{border-width:1px;border-radius:1rem;box-shadow:0 3px 12px #9864450c}
+:root[data-scala-embed="true"] .composer:focus-within{border-color:#9d4f36;box-shadow:0 0 0 3px #f3d7ba80}
+:root[data-scala-embed="true"] .composer-actions .mini-button{min-height:2rem;background:none}
+:root[data-scala-embed="true"] .privacy-note{margin:.4rem 0 0;font-size:.66rem;line-height:1.4;color:#806d5f}
+:root[data-scala-embed="true"] .settings{
+  inset-block-start:var(--scala-nav-height,0px);
+  max-height:calc(100dvh - var(--scala-nav-height,0px) - 2rem);
+}
+@media(min-width:1100px){
+  :root[data-scala-embed="true"] .workspace{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto;gap:1.25rem}
+  :root[data-scala-embed="true"] .ai-toolbar{grid-area:1/2;width:auto;max-width:29rem;justify-content:flex-end;gap:1rem}
+  :root[data-scala-embed="true"] .ideas,
+  :root[data-scala-embed="true"] .messages{grid-area:2/1/3/-1}
+  :root[data-scala-embed="true"] .composer-area,
+  :root[data-scala-embed="true"] .workspace[data-chat="true"] .composer-area{grid-area:3/1/4/-1}
+}
+@media(max-width:720px){
+  :root[data-scala-embed="true"] .workspace{padding:calc(var(--scala-nav-height,0px) + 1rem) 1rem .75rem;gap:.75rem}
+  :root[data-scala-embed="true"] .welcome{padding-left:3.25rem;min-height:2.5rem;align-content:center}
+  :root[data-scala-embed="true"] .welcome p{display:none}
+  :root[data-scala-embed="true"] .sidebar-toggle{top:calc(var(--scala-nav-height,0px) + .85rem);left:1rem;box-shadow:none}
+  :root[data-scala-embed="true"] .sidebar{
+    top:var(--scala-nav-height,0px);bottom:0;height:calc(100dvh - var(--scala-nav-height,0px));max-height:none;
+    padding:1rem;overflow:hidden;background:linear-gradient(165deg,#f9e5d3,#f7eadd 76%);box-shadow:8px 0 30px #68372722;
+  }
+  :root[data-scala-embed="true"] .sidebar::after{display:none}
+  :root[data-scala-embed="true"] .sidebar-close{top:.8rem;right:.7rem}
+  :root[data-scala-embed="true"] .sidebar .new-conversation{width:calc(100% - 3.1rem);margin-right:3.1rem;font-size:.84rem}
+  :root[data-scala-embed="true"] .drawer-backdrop{top:var(--scala-nav-height,0px)}
+  :root[data-scala-embed="true"] .ai-toolbar{gap:.35rem}
+  :root[data-scala-embed="true"] .ai-toolbar .status-group{flex:1 1 8rem}
+  :root[data-scala-embed="true"] .topics{gap:.5rem;margin-top:.8rem}
+  :root[data-scala-embed="true"] .topic{grid-template-columns:2rem minmax(0,1fr);gap:.5rem;min-height:5rem;padding:.65rem .55rem}
+  :root[data-scala-embed="true"] .topic-title{font-size:.86rem}
+  :root[data-scala-embed="true"] .topic-subtitle{font-size:calc(.7rem * var(--reading-scale))}
+  :root[data-scala-embed="true"] .message{max-width:100%}
+  :root[data-scala-embed="true"] .composer-helper{display:none}
+  :root[data-scala-embed="true"] .privacy-note{font-size:.62rem}
+}
+:root[data-scala-embed="true"][data-scala-embed-compact="true"] .workspace{gap:.65rem}
+:root[data-scala-embed="true"][data-scala-embed-compact="true"] .welcome p{display:none}
+:root[data-scala-embed="true"] .high-contrast .topic,
+:root[data-scala-embed="true"] .high-contrast .composer{background:#fffff4;border-color:#894b31}
+:root[data-scala-embed="true"] .high-contrast .welcome p,
+:root[data-scala-embed="true"] .high-contrast .sidebar-empty p,
+:root[data-scala-embed="true"] .high-contrast .topic-subtitle,
+:root[data-scala-embed="true"] .high-contrast .privacy-note{color:#572d1f}
+:root[data-scala-embed="true"] .reduced-motion .topic:hover{transform:none}
+@media(prefers-reduced-motion:reduce){
+  :root[data-scala-embed="true"] .topic:hover{transform:none}
+}

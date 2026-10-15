@@ -10,7 +10,8 @@
 <link rel="preconnect" href="https://scala-ai-publico.thatfixnova.chatgpt.site">
 <link rel="icon" type="image/webp" href="https://scala-ai-publico.thatfixnova.chatgpt.site/chat/assets/art-49d31515202e.webp">
 <link rel="stylesheet" href="./chat/original.css?v=3.0.0">
-<link rel="stylesheet" href="./chat/advanced.css?v=3.0.2">
+<link rel="stylesheet" href="./chat/advanced.css?v=3.0.3">
+<link rel="stylesheet" href="./chat/embedded.css?v=3.0.3">
 </head>
 <body>
 <div class="page">
@@ -47,10 +48,10 @@
           <svg class="logo-sprig logo-sprig-left" viewBox="0 0 36 58" aria-hidden="true"><path d="M29 54C14 40 12 25 17 6"/><path d="M17 19C8 19 4 13 5 7c7 0 11 4 12 12ZM15 31c-9 0-14-5-14-11 8-1 13 3 14 11ZM20 44C10 47 4 43 3 36c8-3 14 0 17 8ZM15 25c10-1 15-6 15-12-9-1-14 4-15 12ZM17 39c10-1 15-7 14-13-8 0-13 5-14 13Z"/></svg>
           <svg class="logo-sprig logo-sprig-right" viewBox="0 0 36 58" aria-hidden="true"><path d="M29 54C14 40 12 25 17 6"/><path d="M17 19C8 19 4 13 5 7c7 0 11 4 12 12ZM15 31c-9 0-14-5-14-11 8-1 13 3 14 11ZM20 44C10 47 4 43 3 36c8-3 14 0 17 8ZM15 25c10-1 15-6 15-12-9-1-14 4-15 12ZM17 39c10-1 15-7 14-13-8 0-13 5-14 13Z"/></svg>
         </div>
-        <h1 id="welcome-title">Bienvenido a SCALA <span class="gold-word">AI</span></h1>
+        <h1 id="welcome-title"><span class="welcome-intro">Bienvenido a </span>SCALA <span class="gold-word">AI</span></h1>
         <p>Un espacio para conversar y crecer en fe.</p>
       </section>
-      <div class="ai-toolbar"><label for="mode">Modo <select id="mode"><option value="fast">Rápido</option><option value="advanced">Avanzado</option></select></label><div class="status-group"><span id="connection-status" class="status-pill" role="status">Conectando…</span><button class="mini-button" id="service-refresh" type="button">Comprobar conexión</button></div></div><p class="mode-help" id="mode-help">Respuestas ágiles para el día a día</p>
+      <div class="ai-toolbar"><label for="mode">Modo <select id="mode" aria-describedby="mode-help"><option value="fast">Rápido</option><option value="advanced">Avanzado</option></select></label><div class="status-group"><span id="connection-status" class="status-pill" role="status">Conectando…</span><button class="mini-button" id="service-refresh" type="button">Comprobar conexión</button></div></div><p class="mode-help" id="mode-help">Respuestas ágiles para el día a día</p>
       <section class="ideas" id="ideas" aria-labelledby="ideas-title">
         <div class="ideas-heading"><h2 id="ideas-title">¿Sobre qué te gustaría conversar?</h2></div>
         <div class="topics">
@@ -65,7 +66,7 @@
         <div class="composer-actions"><button type="button" id="attachment-open" class="mini-button">＋ Adjuntar texto</button><div><button type="button" id="retry" class="mini-button" hidden>Reintentar</button><button type="button" id="continue" class="mini-button" hidden>Continuar</button></div></div><input id="attachment-file" type="file" accept=".txt,.md,.csv,.json,.log" hidden><div class="attachment-chip" id="attachment-chip" hidden><span id="attachment-name"></span><button type="button" id="attachment-remove" aria-label="Quitar documento">×</button></div>
         <form class="composer" id="composer"><label class="sr-only" for="message-input">Escribe tu mensaje a SCALA AI</label><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-5 4V6a2 2 0 0 1 2-2Z"/><path d="M7 9h10M7 13h6"/></svg><textarea id="message-input" name="message" rows="1" maxlength="6000" placeholder="Escribe tu mensaje..."></textarea><button class="send" id="send" type="submit" aria-label="Enviar mensaje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4m-7 7 7-7 7 7"/></svg></button></form>
         <p class="composer-helper"><span class="helper-desktop"><kbd>Enter</kbd> para enviar · <kbd>Shift+Enter</kbd> para nueva línea</span><span class="helper-mobile">Escribe a tu ritmo.</span></p>
-        <p class="privacy-note">Historial solo por hoy en este navegador · Se borra al cambiar de día · Mensajes procesados por Gemini.</p><p class="connection-note" id="connection-note" role="status" hidden></p>
+        <p class="privacy-note">Historial local hasta medianoche · Procesado por Gemini.</p><p class="connection-note" id="connection-note" role="status" hidden></p>
       </div>
       <svg class="workspace-ornament" viewBox="0 0 64 82" aria-hidden="true"><path d="M14 76C36 61 40 43 39 15M26 64c15-2 24-8 30-21"/><path class="ornament-petal" d="M29 58C16 57 11 51 12 42c11 0 17 5 17 16ZM38 41C25 37 22 30 25 22c10 3 15 10 13 19ZM39 28C47 22 48 13 42 6c-8 6-9 14-3 22ZM37 49c13-1 19-8 19-16-12 0-18 6-19 16ZM47 55c-3-11 0-19 8-22 5 10 2 18-8 22Z"/><path d="m9 16 1.7 4.3L15 22l-4.3 1.7L9 28l-1.7-4.3L3 22l4.3-1.7Z"/></svg>
     </main>
