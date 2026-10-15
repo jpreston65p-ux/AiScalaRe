@@ -94,10 +94,104 @@ test('an incompatible server version blocks submission with an actionable error'
   assert.match(page.get('connection-note').textContent, /Recarga/);
 });
 
-test('the upgrade preserves messages stored by the old page on the same GitHub origin', async () => {
+test('the upgrade preserves current-day messages stored by the old page on the same GitHub origin', async () => {
   const page = await boot(async () => Response.json(state()), page => {
-    page.storage.set('scala-ai-conversations-v1', JSON.stringify([{ id: 'old-conversation', messages: [{ role: 'user', content: 'Mi conversación anterior' }] }]));
+    page.storage.set('scala-ai-conversations-v1', JSON.stringify([{ id: 'old-conversation', updatedAt: new Date().toISOString(), messages: [{ role: 'user', content: 'Mi conversación anterior' }] }]));
   });
   assert.equal(page.get('history-list').children.length, 1);
   assert.match(page.get('history-list').textContent, /Mi conversación anterior/);
+});
+
+function useClock(page, date) {
+  page.run(`const OriginalDate = Date; let historyTestNow = ${date.getTime()}; Date = class extends OriginalDate { constructor(...args) { super(...(args.length ? args : [historyTestNow])); } static now() { return historyTestNow; } };`);
+  return next => page.run(`historyTestNow = ${next.getTime()};`);
+}
+const historyKey = 'scala-ai-conversations-v1', activeKey = 'scala-ai-active-v2';
+const conversation = (id, date) => ({ id, title: id, updatedAt: date?.toISOString(), messages: [{ role: 'user', content: 'Mensaje ' + id }] });
+
+test('opening the page erases expired, undated and invalid chats while preserving today and explicit preferences', async () => {
+  const today = new Date(2026, 9, 15, 12), yesterday = new Date(2026, 9, 14, 23, 59);
+  const page = await boot(async () => Response.json(state()), p => {
+    useClock(p, today);
+    const messageDated = conversation('message-dated'); messageDated.messages[0].savedAt = today.toISOString();
+    const continuedOldChat = conversation('started-yesterday', today); continuedOldChat.messages[0].savedAt = yesterday.toISOString();
+    p.storage.set(historyKey, JSON.stringify([conversation('today', today), conversation('yesterday', yesterday), conversation('undated'), { ...conversation('invalid'), updatedAt: 'not-a-date' }, messageDated, continuedOldChat]));
+    p.storage.set(activeKey, JSON.stringify('yesterday'));
+    p.storage.set('scala-ai-preferences-v1', JSON.stringify({ style: 'brief' }));
+    p.storage.set('scala-ai-library-v1', JSON.stringify([{ id: 'saved', content: 'Respuesta guardada manualmente' }]));
+  });
+  assert.deepEqual(JSON.parse(page.storage.get(historyKey)).map(c => c.id), ['today', 'message-dated']);
+  assert.equal(JSON.parse(page.storage.get(activeKey)), null);
+  assert.ok(!page.get('history-list').textContent.includes('yesterday'));
+  assert.equal(JSON.parse(page.storage.get('scala-ai-preferences-v1')).style, 'brief');
+  assert.equal(JSON.parse(page.storage.get('scala-ai-library-v1'))[0].id, 'saved');
+});
+
+test('an open page clears the active conversation and persisted messages at local midnight', async () => {
+  let advance;
+  const beforeMidnight = new Date(2026, 9, 15, 23, 59, 59);
+  const page = await boot(async () => Response.json(state()), p => {
+    advance = useClock(p, beforeMidnight);
+    p.storage.set(historyKey, JSON.stringify([conversation('expires-tonight', beforeMidnight)]));
+    p.storage.set(activeKey, JSON.stringify('expires-tonight'));
+  });
+  assert.match(page.get('messages').textContent, /expires-tonight/);
+  advance(new Date(2026, 9, 16, 0, 0, 1));
+  await page.tick(1100);
+  assert.deepEqual(JSON.parse(page.storage.get(historyKey)), []);
+  assert.equal(JSON.parse(page.storage.get(activeKey)), null);
+  assert.equal(page.get('messages').children.length, 0);
+  assert.equal(page.get('history-list').children.length, 0);
+});
+
+test('a suspended tab cleans up on resume and a new message starts a fresh conversation', async () => {
+  let advance;
+  const today = new Date(2026, 9, 15, 12);
+  const calls = [];
+  const page = await boot(async (url, options) => {
+    if (url.endsWith('/api/status')) return Response.json(state());
+    calls.push(JSON.parse(options.body)); return answer();
+  }, p => {
+    advance = useClock(p, today);
+    p.storage.set(historyKey, JSON.stringify([conversation('yesterday-after-sleep', today)]));
+    p.storage.set(activeKey, JSON.stringify('yesterday-after-sleep'));
+  });
+  advance(new Date(2026, 9, 16, 12));
+  await page.win.emit('focus');
+  assert.deepEqual(JSON.parse(page.storage.get(historyKey)), []);
+  page.get('message-input').value = 'Mi mensaje de hoy';
+  await page.get('composer').emit('submit');
+  assert.deepEqual(calls[0].messages, [{ role: 'user', content: 'Mi mensaje de hoy' }]);
+  assert.equal(JSON.parse(page.storage.get(historyKey)).length, 1);
+});
+
+test('an old backup cannot restore expired or undated chats and a current backup still imports', async () => {
+  const today = new Date(2026, 9, 15, 12), yesterday = new Date(2026, 9, 14, 12);
+  const page = await boot(async () => Response.json(state()), p => useClock(p, today));
+  const importFile = conversations => ({ target: { files: [{ size: 1000, text: async () => JSON.stringify({ conversations }) }], value: 'backup.json' } });
+  await page.get('import-file').emit('change', importFile([conversation('expired-copy', yesterday), conversation('undated-copy')]));
+  assert.deepEqual(JSON.parse(page.storage.get(historyKey)), []);
+  assert.match(page.get('toast').textContent, /no contiene conversaciones de hoy/);
+  await page.get('import-file').emit('change', importFile([conversation('current-copy', today)]));
+  assert.equal(JSON.parse(page.storage.get(historyKey))[0].id, 'current-copy');
+});
+
+test('midnight cancels an in-flight answer without allowing it to recreate deleted history', async () => {
+  let advance, streamController, requestSignal, cancelled = 0;
+  const beforeMidnight = new Date(2026, 9, 15, 23, 59, 59);
+  const page = await boot(async (url, options) => {
+    if (url.endsWith('/api/status')) return Response.json(state());
+    if (url.endsWith('/api/cancel')) { cancelled++; return Response.json({ cancelled: true }); }
+    requestSignal = options.signal;
+    return new Response(new ReadableStream({ start(controller) { streamController = controller; options.signal.addEventListener('abort', () => controller.error(new DOMException('Stopped', 'AbortError')), { once: true }); } }));
+  }, p => { advance = useClock(p, beforeMidnight); });
+  page.get('message-input').value = 'Una respuesta que cruza medianoche';
+  const sending = page.get('composer').emit('submit'); await settled();
+  assert.ok(streamController);
+  advance(new Date(2026, 9, 16, 0, 0, 1));
+  await page.tick(1100); await sending;
+  assert.equal(requestSignal.aborted, true);
+  assert.equal(cancelled, 1);
+  assert.deepEqual(JSON.parse(page.storage.get(historyKey)), []);
+  assert.equal(page.get('messages').children.length, 0);
 });

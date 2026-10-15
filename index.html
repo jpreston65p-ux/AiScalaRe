@@ -64,7 +64,7 @@
         <div class="composer-actions"><button type="button" id="attachment-open" class="mini-button">＋ Adjuntar texto</button><div><button type="button" id="retry" class="mini-button" hidden>Reintentar</button><button type="button" id="continue" class="mini-button" hidden>Continuar</button></div></div><input id="attachment-file" type="file" accept=".txt,.md,.csv,.json,.log" hidden><div class="attachment-chip" id="attachment-chip" hidden><span id="attachment-name"></span><button type="button" id="attachment-remove" aria-label="Quitar documento">×</button></div>
         <form class="composer" id="composer"><label class="sr-only" for="message-input">Escribe tu mensaje a SCALA AI</label><svg class="composer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-5 4V6a2 2 0 0 1 2-2Z"/><path d="M7 9h10M7 13h6"/></svg><textarea id="message-input" name="message" rows="1" maxlength="6000" placeholder="Escribe tu mensaje..."></textarea><button class="send" id="send" type="submit" aria-label="Enviar mensaje"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4m-7 7 7-7 7 7"/></svg></button></form>
         <p class="composer-helper"><span class="helper-desktop"><kbd>Enter</kbd> para enviar · <kbd>Shift+Enter</kbd> para nueva línea</span><span class="helper-mobile">Escribe a tu ritmo.</span></p>
-        <p class="privacy-note">Historial en este navegador · Mensajes procesados por Gemini.</p><p class="connection-note" id="connection-note" role="status" hidden></p>
+        <p class="privacy-note">Historial solo por hoy en este navegador · Se borra al cambiar de día · Mensajes procesados por Gemini.</p><p class="connection-note" id="connection-note" role="status" hidden></p>
       </div>
       <svg class="workspace-ornament" viewBox="0 0 64 82" aria-hidden="true"><path d="M14 76C36 61 40 43 39 15M26 64c15-2 24-8 30-21"/><path class="ornament-petal" d="M29 58C16 57 11 51 12 42c11 0 17 5 17 16ZM38 41C25 37 22 30 25 22c10 3 15 10 13 19ZM39 28C47 22 48 13 42 6c-8 6-9 14-3 22ZM37 49c13-1 19-8 19-16-12 0-18 6-19 16ZM47 55c-3-11 0-19 8-22 5 10 2 18-8 22Z"/><path d="m9 16 1.7 4.3L15 22l-4.3 1.7L9 28l-1.7-4.3L3 22l4.3-1.7Z"/></svg>
     </main>
@@ -104,8 +104,8 @@
 
 <dialog id="action-dialog" class="settings" aria-labelledby="action-title"><div class="settings-header"><h2 id="action-title">Tu conversación</h2><button type="button" id="action-close" class="settings-close" aria-label="Cerrar opciones">×</button></div><form id="rename-form"><label class="dialog-field" for="chat-title">Nombre<input id="chat-title" maxlength="80" required></label><div class="dialog-buttons"><button type="button" id="chat-delete" class="mini-button danger-button">Eliminar conversación</button><button type="submit" class="settings-done">Guardar nombre</button></div></form><p id="action-feedback" class="dialog-feedback" role="status"></p></dialog>
 <dialog id="resource-dialog" class="settings resource-dialog" aria-labelledby="resource-title"><div class="settings-header"><h2 id="resource-title">Respuesta guardada</h2><button type="button" id="resource-close" class="settings-close" aria-label="Cerrar respuesta">×</button></div><div class="message-body" id="resource-body"></div><div class="dialog-buttons"><button type="button" id="resource-copy" class="mini-button">Copiar</button></div></dialog>
-<script src="./chat/chat-utils.js?v=3.0.0" defer></script>
-<script src="./chat/app.js?v=3.0.0" defer></script>
+<script src="./chat/chat-utils.js?v=3.0.1" defer></script>
+<script src="./chat/app.js?v=3.0.1" defer></script>
 
 </body>
 </html>

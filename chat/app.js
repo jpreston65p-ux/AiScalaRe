@@ -8,14 +8,32 @@
   const input = $('message-input'), messages = $('messages'), workspace = $('workspace'), settings = $('settings');
   let chats = [], library = [], prefs = {}, activeId = null, pending = null, attachment = null, sessionToken = '', configured = false, loading = true, cooldownUntil = 0, toastTimer, drawerOpener, renderFrame, action = null;
   function read(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
-  try { chats = U.normalizeConversations(read(keys.chats, [])); } catch {}
+  let historyDay = new Date().toDateString(), historyExpiryTimer;
+  try { chats = U.todayConversations(U.normalizeConversations(read(keys.chats, []))); } catch {}
   prefs = read(keys.prefs, {}); if (!prefs || typeof prefs !== 'object' || Array.isArray(prefs)) prefs = {};
   library = read(keys.library, []); if (!Array.isArray(library)) library = []; library = library.filter(x => x && typeof x.content === 'string' && x.content.length <= 24000 && typeof x.id === 'string').slice(0, 50);
   activeId = read(keys.active, null); if (!chats.some(c => c.id === activeId)) activeId = null;
   const uuid = () => window.crypto?.randomUUID?.() || Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
   const current = () => chats.find(c => c.id === activeId);
   function notify(text) { $('toast').textContent = text; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('toast').hidden = true; }, 4200); }
-  function save() { try { localStorage.setItem(keys.chats, JSON.stringify(chats.slice(0, 100))); localStorage.setItem(keys.active, JSON.stringify(activeId)); localStorage.setItem(keys.library, JSON.stringify(library.slice(0, 50))); } catch { notify('El navegador no pudo guardar los cambios. Exporta tu historial para conservarlo.'); } }
+  function save() { chats = U.todayConversations(chats); if (!chats.some(c => c.id === activeId)) activeId = null; try { localStorage.setItem(keys.chats, JSON.stringify(chats.slice(0, 100))); localStorage.setItem(keys.active, JSON.stringify(activeId)); localStorage.setItem(keys.library, JSON.stringify(library.slice(0, 50))); } catch { notify('El navegador no pudo guardar los cambios. Exporta tu historial para conservarlo.'); } }
+  function scheduleHistoryExpiry() {
+    clearTimeout(historyExpiryTimer);
+    historyExpiryTimer = setTimeout(expireHistory, Math.max(25, U.nextLocalMidnight() - Date.now() + 25));
+  }
+  function expireHistory() {
+    const kept = U.todayConversations(chats), day = new Date().toDateString();
+    const expiredPending = pending && !kept.some(c => c.id === pending.chat.id);
+    const changed = kept.length !== chats.length || !!expiredPending || historyDay !== day;
+    chats = kept; historyDay = day;
+    if (!chats.some(c => c.id === activeId)) activeId = null;
+    if (expiredPending) stopPending();
+    if (changed) {
+      if (action && !chats.some(c => c.id === action)) { action = null; $('action-dialog').close(); }
+      save(); renderAll(); notify('El historial del día anterior se eliminó automáticamente.');
+    }
+    scheduleHistoryExpiry();
+  }
   function resizeInput() { input.style.height = '2.7rem'; input.style.height = Math.min(input.scrollHeight, 112) + 'px'; }
   function applyPrefs() {
     const scale = [1, 1.12, 1.25].includes(Number(prefs.scale)) ? Number(prefs.scale) : 1;
@@ -159,7 +177,7 @@
     }
   }
   async function submit(event) {
-    event.preventDefault(); if (pending) { stopPending(); return; }
+    event.preventDefault(); expireHistory(); if (pending) { stopPending(); return; }
     if (loading) return;
     if (cooldownUntil > Date.now()) { notify('Espera a que termine la pausa de Gemini.'); return; }
     if (!configured) { status('SCALA AI se está preparando. Vuelve a visitarnos en un momento.'); return; }
@@ -168,12 +186,13 @@
     if (!content.trim()) { input.focus(); return; }
     if (content.length > 6000) { notify('El mensaje y el documento juntos admiten hasta 6000 caracteres. Acorta el texto.'); return; }
     let chat = current();
-    if (!chat) { chat = { id: uuid(), title: (input.value.trim() || attachment?.name || 'Conversación').slice(0, 65), updatedAt: new Date().toISOString(), messages: [] }; chats.unshift(chat); chats = chats.slice(0, 100); activeId = chat.id; }
+    if (!chat) { const createdAt = new Date().toISOString(); chat = { id: uuid(), title: (input.value.trim() || attachment?.name || 'Conversación').slice(0, 65), createdAt, updatedAt: createdAt, messages: [] }; chats.unshift(chat); chats = chats.slice(0, 100); activeId = chat.id; }
     chat.messages.push({ role: 'user', content, savedAt: new Date().toISOString() }); chat.updatedAt = new Date().toISOString();
     input.value = ''; attachment = null; renderAttachment(); resizeInput(); save(); renderHistory(); await sendConversation(chat); input.focus({ preventScroll: true });
   }
   $('composer').addEventListener('submit', submit);
   $('retry').addEventListener('click', async () => {
+    expireHistory();
     if (pending || cooldownUntil > Date.now()) return; if (!configured) { status('SCALA AI se está preparando. Vuelve a visitarnos en un momento.'); return; }
     const chat = current(); if (!chat) return;
     while (chat.messages.length && chat.messages.at(-1).role === 'assistant') chat.messages.pop();
@@ -206,6 +225,7 @@
   });
   $('attachment-remove').addEventListener('click', () => { attachment = null; renderAttachment(); });
   $('export-history').addEventListener('click', () => {
+    expireHistory();
     const raw = JSON.stringify({ app: 'SCALA AI', version: 2, exportedAt: new Date().toISOString(), conversations: chats.map(c => ({ ...c, messages: c.messages.filter(m => m.content) })), library }, null, 2), blob = new Blob([raw], { type: 'application/json' }), url = URL.createObjectURL(blob), link = document.createElement('a');
     link.href = url; link.download = 'SCALA-AI-historial-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
@@ -213,7 +233,7 @@
   $('import-file').addEventListener('change', async event => {
     const file = event.target.files[0]; event.target.value = ''; if (!file) return;
     if (file.size > 4000000) { notify('La copia de historial admite hasta 4 MB.'); return; }
-    try { const data = JSON.parse(await file.text()), loaded = U.normalizeConversations(Array.isArray(data) ? data : data.conversations); if (!loaded.length) throw new Error('La copia no contiene conversaciones válidas.'); const ids = new Set(chats.map(c => c.id)); for (const chat of loaded) if (!ids.has(chat.id)) { chats.push(chat); ids.add(chat.id); } chats = chats.slice(0, 100); if (Array.isArray(data.library)) { for (const item of data.library) if (item && typeof item.id === 'string' && typeof item.content === 'string' && item.content.length <= 24000 && !library.some(x => x.id === item.id)) library.push({ id: item.id.slice(0, 120), title: typeof item.title === 'string' ? item.title.slice(0, 80) : 'Respuesta', content: item.content }); library = library.slice(0, 50); } save(); renderAll(); notify('Historial importado. Las conversaciones existentes se conservaron.'); }
+    try { expireHistory(); const data = JSON.parse(await file.text()), loaded = U.todayConversations(U.normalizeConversations(Array.isArray(data) ? data : data.conversations)); if (!loaded.length) throw new Error('La copia no contiene conversaciones de hoy. El historial anterior ya caducó.'); const ids = new Set(chats.map(c => c.id)); for (const chat of loaded) if (!ids.has(chat.id)) { chats.push(chat); ids.add(chat.id); } chats = chats.slice(0, 100); if (Array.isArray(data.library)) { for (const item of data.library) if (item && typeof item.id === 'string' && typeof item.content === 'string' && item.content.length <= 24000 && !library.some(x => x.id === item.id)) library.push({ id: item.id.slice(0, 120), title: typeof item.title === 'string' ? item.title.slice(0, 80) : 'Respuesta', content: item.content }); library = library.slice(0, 50); } save(); renderAll(); notify('Historial de hoy importado. Se eliminará al comenzar el día siguiente.'); }
     catch (error) { notify(error.message || 'No pudimos importar esa copia.'); }
   });
   $('action-close').addEventListener('click', () => $('action-dialog').close());
@@ -225,9 +245,10 @@
   $('resource-close').addEventListener('click', () => $('resource-dialog').close()); $('resource-copy').addEventListener('click', () => copyText($('resource-body').textContent));
   for (const dialog of [settings, $('action-dialog'), $('resource-dialog')]) dialog.addEventListener('click', event => { if (event.target === dialog) { const box = dialog.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.close(); } });
   window.addEventListener('beforeunload', () => { if (pending) { pending.assistant.partial = true; save(); } });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && !pending) refreshStatus(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { expireHistory(); if (!pending) refreshStatus(); } });
   setInterval(() => { if (!pending && !document.hidden) refreshStatus(); }, 900000);
-  window.addEventListener('pageshow', () => { if (!pending) refreshStatus(); });
-  let lastWait = -1; setInterval(() => { const wait = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000)); if (wait !== lastWait) { lastWait = wait; updateControls(); } }, 1000);
-  applyPrefs(); renderAll(); resizeInput(); refreshStatus();
+  window.addEventListener('pageshow', () => { expireHistory(); if (!pending) refreshStatus(); });
+  window.addEventListener('focus', expireHistory);
+  let lastWait = -1; setInterval(() => { if (historyDay !== new Date().toDateString()) expireHistory(); const wait = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000)); if (wait !== lastWait) { lastWait = wait; updateControls(); } }, 1000);
+  save(); scheduleHistoryExpiry(); applyPrefs(); renderAll(); resizeInput(); refreshStatus();
 })();

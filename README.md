@@ -15,6 +15,7 @@ GitHub Pages sirve el HTML, los estilos, los scripts y las fuentes del chat. Las
 - Modos Rápido y Avanzado con Gemini.
 - Respuestas progresivas, detener, reintentar y continuar.
 - Historial, búsqueda, biblioteca e importación/exportación por navegador.
+- Las conversaciones del historial se conservan solo durante el día local del dispositivo. Se borran al cambiar de día mientras la página está abierta, o antes de mostrarse al volver a abrirla. Las copias importadas también deben ser de hoy. La biblioteca de respuestas guardadas manualmente conserva su comportamiento independiente.
 - Preferencias de lectura e instrucciones personales.
 - Adjuntar texto, copiar respuestas y mostrar Markdown seguro.
 

@@ -88,9 +88,18 @@
       const messages = item.messages.filter(m => m && ['user', 'assistant'].includes(m.role) && typeof m.content === 'string' && m.content.trim()).slice(-100).map(m => ({ role: m.role, content: m.content.slice(0, m.role === 'user' ? 6000 : 24000), partial: !!m.partial, mode: ['fast', 'advanced'].includes(m.mode) ? m.mode : 'fast', model: typeof m.model === 'string' ? m.model.slice(0, 100) : '', savedAt: typeof m.savedAt === 'string' ? m.savedAt : '' }));
       if (!messages.some(m => m.role === 'user')) continue;
       const id = item.id.slice(0, 100); if (seen.has(id)) continue; seen.add(id);
-      result.push({ id, title: typeof item.title === 'string' ? item.title.slice(0, 80) : messages.find(m => m.role === 'user').content.slice(0, 65), updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(), messages });
+      const dates = [item.createdAt, item.updatedAt, ...messages.map(m => m.savedAt)].map(value => typeof value === 'string' ? Date.parse(value) : NaN).filter(Number.isFinite);
+      result.push({ id, title: typeof item.title === 'string' ? item.title.slice(0, 80) : messages.find(m => m.role === 'user').content.slice(0, 65), createdAt: dates.length ? new Date(Math.min(...dates)).toISOString() : '', updatedAt: dates.length ? new Date(Math.max(...dates)).toISOString() : '', messages });
     }
     return result;
+  }
+  function nextLocalMidnight(now = Date.now()) {
+    const next = new Date(now); next.setHours(24, 0, 0, 0); return next.getTime();
+  }
+  function todayConversations(value, now = Date.now()) {
+    const start = new Date(now); start.setHours(0, 0, 0, 0);
+    const end = nextLocalMidnight(now);
+    return value.filter(chat => { const created = Date.parse(chat.createdAt || chat.updatedAt); return created >= start.getTime() && created < end; });
   }
   function validateStatus(value, version) {
     if (!value || value.app !== 'scala-ai-public' || value.provider !== 'gemini' || value.version !== version) {
@@ -101,7 +110,7 @@
     }
     return value;
   }
-  const api = { safeLink, renderMarkdown, readEvents, normalizeConversations, validateStatus };
+  const api = { safeLink, renderMarkdown, readEvents, normalizeConversations, todayConversations, nextLocalMidnight, validateStatus };
   root.SCALA_UTILS = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : window);
