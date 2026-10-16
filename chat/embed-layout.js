@@ -6,25 +6,33 @@
 
   const root = document.documentElement;
   let height = 0;
+  let collapsed = false, layoutStableAt = 0;
   root.dataset.scalaEmbed = 'true';
 
   function updateCompactLayout() {
     root.dataset.scalaEmbedCompact = String(window.innerHeight - height <= 660);
   }
 
-  function setHeight(value) {
+  function setHeight(value, nextCollapsed = false) {
     if (typeof value !== 'number' || !Number.isFinite(value)) return;
-    height = Math.min(800, Math.max(0, Math.round(value)));
+    const nextHeight = Math.min(800, Math.max(0, Math.round(value)));
+    nextCollapsed = nextCollapsed === true;
+    if (height !== nextHeight || collapsed !== nextCollapsed) layoutStableAt = Date.now() + 400;
+    height = nextHeight; collapsed = nextCollapsed;
     root.style.setProperty('--scala-nav-height', height + 'px');
+    root.dataset.scalaNavCollapsed = String(collapsed);
     updateCompactLayout();
   }
 
   setHeight(Number(query.get('navHeight') || 0));
   window.addEventListener('message', event => {
     if (event.source !== window.parent || event.data?.type !== 'scala:nav-layout') return;
-    setHeight(event.data.height);
+    setHeight(event.data.height, event.data.collapsed);
   });
-  window.addEventListener('resize', updateCompactLayout, { passive: true });
+  window.addEventListener('resize', () => {
+    layoutStableAt = Date.now() + 400;
+    updateCompactLayout();
+  }, { passive: true });
 
   // Relay reading gestures even when the welcome screen has nothing to scroll.
   let userScrollUntil = 0, queued = false, pendingScroll;
@@ -88,7 +96,7 @@
     if (typeof top !== 'number' || !Number.isFinite(top) || top < 0) return;
     const previousTop = scrollPositions.get(scroller) ?? top;
     scrollPositions.set(scroller, top);
-    if (Date.now() > userScrollUntil) return;
+    if (Date.now() > userScrollUntil || Date.now() < layoutStableAt) return;
     pendingScroll = { type: 'scala:content-scroll', scroller: scroller.id, top,
       previousTop: pendingScroll?.scroller === scroller.id ? pendingScroll.previousTop : previousTop };
     if (queued) return;

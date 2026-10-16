@@ -25,7 +25,11 @@
   grid-template-rows:auto auto minmax(0,1fr) auto;gap:1rem;
   align-items:stretch;justify-content:normal;
   padding:calc(var(--scala-nav-height,0px) + 1.25rem) clamp(1rem,2.5vw,2.5rem) 1.25rem;
+  transition:padding-top .3s ease;
 }
+/* Reclaim the banner space when it retracts, leaving room for the return arrow. */
+:root[data-scala-embed="true"][data-scala-nav-collapsed="true"] .sidebar{padding-top:5.75rem}
+:root[data-scala-embed="true"][data-scala-nav-collapsed="true"] .settings{inset-block-start:4.75rem;max-height:calc(100dvh - 5.75rem)}
 :root[data-scala-embed="true"] .welcome,
 :root[data-scala-embed="true"] .workspace[data-chat="true"] .welcome{
   display:block;grid-area:1/1;align-self:center;max-width:none;text-align:left;animation:none;
@@ -109,6 +113,10 @@
   :root[data-scala-embed="true"] .message{max-width:100%}
   :root[data-scala-embed="true"] .composer-helper{display:none}
   :root[data-scala-embed="true"] .privacy-note{font-size:.62rem}
+  :root[data-scala-embed="true"][data-scala-nav-collapsed="true"] .welcome{padding-left:8rem;min-height:3.5rem}
+  :root[data-scala-embed="true"][data-scala-nav-collapsed="true"] .sidebar-toggle{top:1.2rem;left:5.25rem}
+  :root[data-scala-embed="true"][data-scala-nav-collapsed="true"] .sidebar{top:4.75rem;height:calc(100dvh - 4.75rem);padding-top:1rem}
+  :root[data-scala-embed="true"][data-scala-nav-collapsed="true"] .drawer-backdrop{top:4.75rem}
 }
 :root[data-scala-embed="true"][data-scala-embed-compact="true"] .workspace{gap:.65rem}
 :root[data-scala-embed="true"][data-scala-embed-compact="true"] .welcome p{display:none}

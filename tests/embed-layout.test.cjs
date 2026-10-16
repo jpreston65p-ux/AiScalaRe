@@ -64,6 +64,7 @@ test('invalid height input is bounded and cannot create a negative layout', () =
 
 test('workspace scrolling relays user movement once per frame and keeps the complete direction', () => {
   const page = boot('?embed=scala&navHeight=130');
+  page.advance(401);
   const scroller = { id: 'messages', scrollTop: 100, closest: () => scroller };
   const scroll = () => page.handlers.get('scroll')({ target: scroller });
   scroll(); page.flush();
@@ -81,6 +82,27 @@ test('workspace scrolling relays user movement once per frame and keeps the comp
   scroller.scrollTop = 176; scroll(); page.flush();
   assert.equal(page.sent[2].data.previousTop, 200);
   assert.equal(page.sent[2].data.top, 176, 'the first upward gesture keeps its real direction');
+});
+
+test('collapsed navigation releases its reserved height without interpreting layout reflow as reading', () => {
+  const page = boot('?embed=scala&navHeight=266');
+  const scroller = { id: 'messages', scrollTop: 200, closest: () => scroller };
+  const scroll = () => page.handlers.get('scroll')({ target: scroller });
+  page.advance(401);scroll();
+  page.handlers.get('wheel')({ target: scroller });
+  page.handlers.get('message')({ source: page.parent, data: { type: 'scala:nav-layout', height: 0, collapsed: true } });
+  assert.equal(page.properties.get('--scala-nav-height'), '0px');
+  assert.equal(page.root.dataset.scalaNavCollapsed, 'true');
+  assert.equal(page.root.dataset.scalaEmbedCompact, 'false');
+  scroller.scrollTop = 150;scroll();page.flush();
+  assert.equal(page.sent.filter(item => item.data.type === 'scala:content-scroll').length, 0);
+  page.advance(401);page.handlers.get('touchmove')({ target: scroller });
+  scroller.scrollTop = 130;scroll();page.flush();
+  const packet = page.sent.find(item => item.data.type === 'scala:content-scroll').data;
+  assert.equal(packet.previousTop, 150);assert.equal(packet.top, 130);
+  page.handlers.get('message')({ source: page.parent, data: { type: 'scala:nav-layout', height: 266, collapsed: false } });
+  assert.equal(page.properties.get('--scala-nav-height'), '266px');
+  assert.equal(page.root.dataset.scalaNavCollapsed, 'false');
 });
 
 test('keyboard access reveals navigation without treating text editing or sidebar movement as reading', () => {
