@@ -96,3 +96,25 @@ test('keyboard access reveals navigation without treating text editing or sideba
   page.handlers.get('scroll')({ target: { id: 'history-panel', scrollTop: 80 } }); page.flush();
   assert.equal(page.sent.length, 3);
 });
+
+test('reading gestures are relayed even when the welcome screen has no scrollable content', () => {
+  const page = boot('?embed=scala');
+  page.handlers.get('wheel')({ deltaY: 72, deltaX: 0, deltaMode: 0 });page.flush();
+  const packets = () => page.sent.filter(item => item.data.type === 'scala:scroll-intent');
+  assert.equal(packets().length, 1);
+  assert.equal(packets()[0].data.delta, 72);
+  page.handlers.get('touchstart')({ touches: [{ clientY: 300, clientX: 90 }] });
+  page.handlers.get('touchmove')({ touches: [{ clientY: 360, clientX: 92 }] });page.flush();
+  assert.equal(packets().length, 2);
+  assert.equal(packets()[1].data.delta, -60);
+});
+
+test('pinch zoom, horizontal movement and scrolling over editing controls do not retract navigation', () => {
+  const page = boot('?embed=scala');
+  const wheel = page.handlers.get('wheel');
+  wheel({ deltaY: 72, deltaX: 0, ctrlKey: true });
+  wheel({ deltaY: 3, deltaX: 90 });
+  wheel({ deltaY: 72, deltaX: 0, target: { closest: () => ({ tagName: 'TEXTAREA' }) } });
+  page.flush();
+  assert.equal(page.sent.filter(item => item.data.type === 'scala:scroll-intent').length, 0);
+});
